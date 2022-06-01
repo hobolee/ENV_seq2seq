@@ -1,6 +1,6 @@
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 from encoder import Encoder
 from decoder import Decoder
 from model import ED
@@ -41,6 +41,7 @@ parser.add_argument('-frames_output',
                     type=int,
                     help='sum of predict frames')
 parser.add_argument('-epochs', default=100, type=int, help='sum of epochs')
+parser.add_argument('-mode', default='local', type=str, help='local or server')
 args = parser.parse_args()
 
 random_seed = 1996
@@ -56,11 +57,11 @@ torch.backends.cudnn.benchmark = False
 save_dir = './save_model/' + TIMESTAMP
 
 trainFolder = ADMS(is_train=True,
-                   root='data/',
+                   root='/Users/lihaobo/PycharmProjects/ENV_prediction/NO2/',
                    n_frames_input=args.frames_input,
                    n_frames_output=args.frames_output)
 # validFolder = ADMS(is_train=False,
-#                    root='data/',
+#                    root='/Users/lihaobo/PycharmProjects/ENV_prediction/NO2/',
 #                    n_frames_input=args.frames_input,
 #                    n_frames_output=args.frames_output)
 trainLoader = torch.utils.data.DataLoader(trainFolder,
@@ -95,7 +96,6 @@ def train():
     # initialize the early_stopping object
     early_stopping = EarlyStopping(patience=20, verbose=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = torch.device("mps")
 
     if torch.cuda.device_count() > 1:
         net = nn.DataParallel(net)

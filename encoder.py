@@ -41,7 +41,7 @@ if __name__ == "__main__":
     from data.mm import MovingMNIST
 
     encoder = Encoder(convgru_encoder_params[0],
-                      convgru_encoder_params[1])
+                      convgru_encoder_params[1]).cuda()
     trainFolder = MovingMNIST(is_train=True,
                               root='data/',
                               n_frames_input=10,

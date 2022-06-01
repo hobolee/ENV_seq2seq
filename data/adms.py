@@ -6,15 +6,14 @@ import numpy as np
 
 def load_adms(root):
     # Load MNIST dataset for generating training data.
-    path = os.path.join(root, 'data_2019.pt')
-    adms = torch.load(path).float()[3000:3200, :]
-    # adms = torch.cat((adms[:5381, :], adms[5381, :].view(1, -1), adms[5381:, :]))
+    path = os.path.join(root, 'data_adms.pt')
+    adms = torch.load(path).float()[:200, :]
     return adms
 
 
 def load_adms_fixed(root):
     # Load the fixed dataset
-    path = os.path.join(root, 'data_2019.pt')
+    path = os.path.join(root, 'data_adms.pt')
     dataset = torch.load(path).float()[:200, :]
     # dataset = torch.cat((dataset[:5381, :], dataset[5381, :].view(1, -1), dataset[5381:, :]))
     return dataset

@@ -15,8 +15,6 @@ class Decoder(nn.Module):
             setattr(self, 'stage' + str(self.blocks - index),
                     make_layers(params))
 
-        self.conv = nn.Conv2d(10, 1, 5, 1, 2)
-
     def forward_by_stage(self, inputs, state, subnet, rnn):
         inputs, state_stage = rnn(inputs, state, seq_len=10)
         seq_number, batch_size, input_channel, height, width = inputs.size()
@@ -30,15 +28,12 @@ class Decoder(nn.Module):
 
     def forward(self, hidden_states):
         inputs = self.forward_by_stage(None, hidden_states[-1],
-                                       getattr(self, 'stage2'),
-                                       getattr(self, 'rnn2'))
+                                       getattr(self, 'stage3'),
+                                       getattr(self, 'rnn3'))
         for i in list(range(1, self.blocks))[::-1]:
             inputs = self.forward_by_stage(inputs, hidden_states[i - 1],
                                            getattr(self, 'stage' + str(i)),
                                            getattr(self, 'rnn' + str(i)))
-        # seq_number, batch_size, input_channel, height, width = inputs.size()
-        # inputs = torch.reshape(inputs, (-1, seq_number, height, width))
-        # inputs = self.conv(inputs)
         inputs = inputs.transpose(0, 1)  # to B,S,1,64,64
         return inputs
 
@@ -51,9 +46,9 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     encoder = Encoder(convlstm_encoder_params[0],
-                      convlstm_encoder_params[1])
+                      convlstm_encoder_params[1]).cuda()
     decoder = Decoder(convlstm_forecaster_params[0],
-                      convlstm_forecaster_params[1])
+                      convlstm_forecaster_params[1]).cuda()
     if torch.cuda.device_count() > 1:
         encoder = nn.DataParallel(encoder)
         decoder = nn.DataParallel(decoder)
