@@ -17,7 +17,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2022-05-26T00-00-00"
+TIMESTAMP = "2022-06-01T00-00-00"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -58,18 +58,16 @@ save_dir = './save_model/' + TIMESTAMP
 
 trainFolder = ADMS(is_train=True,
                    root='/Users/lihaobo/PycharmProjects/ENV_prediction/NO2/',
-                   n_frames_input=args.frames_input,
-                   n_frames_output=args.frames_output)
-# validFolder = ADMS(is_train=False,
-#                    root='/Users/lihaobo/PycharmProjects/ENV_prediction/NO2/',
-#                    n_frames_input=args.frames_input,
-#                    n_frames_output=args.frames_output)
+                   mode='train')
+validFolder = ADMS(is_train=False,
+                   root='/Users/lihaobo/PycharmProjects/ENV_prediction/NO2/',
+                   mode='valid')
 trainLoader = torch.utils.data.DataLoader(trainFolder,
                                           batch_size=args.batch_size,
                                           shuffle=False)
-# validLoader = torch.utils.data.DataLoader(validFolder,
-#                                           batch_size=args.batch_size,
-#                                           shuffle=False)
+validLoader = torch.utils.data.DataLoader(validFolder,
+                                          batch_size=args.batch_size,
+                                          shuffle=False)
 
 if args.convlstm:
     encoder_params = convlstm_encoder_params
@@ -129,7 +127,7 @@ def train():
     # to track the average validation loss per epoch as the model trains
     avg_valid_losses = []
     # mini_val_loss = np.inf
-    valid_loss = 10000
+    # valid_loss = 10000
     for epoch in range(cur_epoch, args.epochs + 1):
         ###################
         # train the model #
@@ -155,32 +153,30 @@ def train():
         ######################
         # validate the model #
         ######################
-        # with torch.no_grad():
-        #     net.eval()
-        #     t = tqdm(validLoader, leave=False, total=len(validLoader))
-        #     for i, (idx, targetVar, inputVar) in enumerate(t):
-        #         if i == 3000:
-        #             break
-        #         inputs = inputVar.to(device)
-        #         label = targetVar.to(device).squeeze()
-        #         pred = net(inputs)[:, -1, :, :].squeeze()
-        #         loss = lossfunction(pred, label)
-        #         loss_aver = loss.item() / args.batch_size
-        #         # record validation loss
-        #         valid_losses.append(loss_aver)
-        #         # print ("validloss: {:.6f},  epoch : {:02d}".format(loss_aver,epoch),end = '\r', flush=True)
-        #         t.set_postfix({
-        #             'validloss': '{:.6f}'.format(loss_aver),
-        #             'epoch': '{:02d}'.format(epoch)
-        #         })
+        with torch.no_grad():
+            net.eval()
+            t = tqdm(validLoader, leave=False, total=len(validLoader))
+            for i, (idx, targetVar, inputVar) in enumerate(t):
+                inputs = inputVar.to(device)
+                label = targetVar.to(device).squeeze()
+                pred = net(inputs)[:, -1, :, :].squeeze()
+                loss = lossfunction(pred, label)
+                loss_aver = loss.item() / args.batch_size
+                # record validation loss
+                valid_losses.append(loss_aver)
+                # print ("validloss: {:.6f},  epoch : {:02d}".format(loss_aver,epoch),end = '\r', flush=True)
+                t.set_postfix({
+                    'validloss': '{:.6f}'.format(loss_aver),
+                    'epoch': '{:02d}'.format(epoch)
+                })
         tb.add_scalar('ValidLoss', loss_aver, epoch)
         torch.cuda.empty_cache()
         # print training/validation statistics
         # calculate average loss over an epoch
         train_loss = np.average(train_losses)
-        # valid_loss = np.average(valid_losses)
+        valid_loss = np.average(valid_losses)
         avg_train_losses.append(train_loss)
-        # avg_valid_losses.append(valid_loss)
+        avg_valid_losses.append(valid_loss)
 
         epoch_len = len(str(args.epochs))
 

@@ -2,12 +2,12 @@ import torch.utils.data as data
 import os
 import torch
 import numpy as np
-
+import random
 
 def load_adms(root):
     # Load MNIST dataset for generating training data.
     path = os.path.join(root, 'data_adms.pt')
-    adms = torch.load(path).float()[:200, :]
+    adms = torch.load(path).float()[10000:10200, :]
     return adms
 
 
@@ -20,45 +20,51 @@ def load_adms_fixed(root):
 
 
 class ADMS(data.Dataset):
-    def __init__(self, root, is_train, n_frames_input, n_frames_output):
+    def __init__(self, root, is_train, mode):
         super(ADMS, self).__init__()
-
-        self.dataset = None
-        if is_train:
-            self.adms = load_adms(root)
-            self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
-        else:
-            self.dataset = load_adms_fixed(root)
-            self.dataset = self.dataset.view(-1, 1, 240, 305)[:, :, :, :304]
-            pass # to do
+        # self.dataset = None
+        # if is_train:
+        #     self.adms = load_adms(root)
+        #     self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
+        # else:
+        #     self.dataset = load_adms_fixed(root)
+        #     self.dataset = self.dataset.view(-1, 1, 240, 305)[:, :, :, :304]
+        #     pass # to do
         # self.length = int(1e4) if self.dataset is None else self.dataset.shape[0]
-        if not is_train:
-            self.length = 10
-        else:
-            self.length = self.adms.shape[0] - 72 - 24
+
+        self.adms = load_adms(root)
+        self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
+        self.length = len(self.adms) - 72 - 24
+        self.example_indices = list(range(self.length))
+
+        # keep the same shuffle result, train:valid:test = 8:1:1
+        r = random.random
+        random.seed(2)
+        if mode != 'all':
+            random.shuffle(self.example_indices, random=r)
+        print(self.example_indices[:20])
+        self.mode = mode
+        if self.mode == 'train':
+            self.length = 8 * self.length // 10
+            self.example_indices = self.example_indices[:self.length]
+        elif self.mode == 'valid':
+            self.length = self.length // 10
+            self.example_indices = self.example_indices[8*self.length:9*self.length]
+        elif self.mode == 'test':
+            self.length = self.length - 9 * self.length // 10
+            self.example_indices = self.example_indices[-self.length:]
         self.is_train = is_train
-        self.n_frames_input = n_frames_input
-        self.n_frames_output = n_frames_output
-        self.n_frames_total = self.n_frames_input + self.n_frames_output
         self.image_size_ = [240, 304]
-        # self.digit_size_ = 28
-        # self.step_length_ = 0.1
 
     def __getitem__(self, idx):
-        idx2 = idx+72
-        if self.is_train:
-            input = self.adms[idx2-72:idx2, :, :, :]
-            output = self.adms[idx2+24, :, :, :]
-        else:
-            input = self.dataset[idx2 - 72:idx2, :, :, :]
-            output = self.dataset[idx2 + 24, :, :, :]
+        idx2 = self.example_indices[idx] + 72
+        input = self.adms[idx2-72:idx2, :, :, :]
+        output = self.adms[idx2+24, :, :, :]
         out = [idx, output, input]
         return out
 
     def __len__(self):
         return self.length
-
-        pass
 
 
 if __name__ == "__main__":
