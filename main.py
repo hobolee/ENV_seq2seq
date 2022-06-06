@@ -28,7 +28,7 @@ parser.add_argument('-cgru',
                     help='use convgru as base cell',
                     action='store_true')
 parser.add_argument('--batch_size',
-                    default=8,
+                    default=1,
                     type=int,
                     help='mini-batch size')
 parser.add_argument('-lr', default=1e-5, type=float, help='G learning rate')
@@ -57,10 +57,10 @@ torch.backends.cudnn.benchmark = False
 save_dir = './save_model/' + TIMESTAMP
 
 trainFolder = ADMS(is_train=True,
-                   root='/Users/lihaobo/PycharmProjects/ENV_prediction/NO2/',
+                   root='/Users/lihaobo/PycharmProjects/data_no2/',
                    mode='train')
 validFolder = ADMS(is_train=False,
-                   root='/Users/lihaobo/PycharmProjects/ENV_prediction/NO2/',
+                   root='/Users/lihaobo/PycharmProjects/data_no2/',
                    mode='valid')
 trainLoader = torch.utils.data.DataLoader(trainFolder,
                                           batch_size=args.batch_size,
@@ -102,7 +102,7 @@ def train():
     if os.path.exists(os.path.join(save_dir, 'checkpoint.pth.tar')):
         # load existing model
         print('==> loading existing model')
-        model_info = torch.load(os.path.join(save_dir, 'checkpoint.pth.tar'))
+        model_info = torch.load(os.path.join(save_dir, 'checkpoint.pth.tar'), map_location=torch.device('cpu'))
         net.load_state_dict(model_info['state_dict'])
         optimizer = torch.optim.Adam(net.parameters())
         optimizer.load_state_dict(model_info['optimizer'])
@@ -138,7 +138,7 @@ def train():
             label = targetVar.to(device).squeeze()  # B,S,C,H,W
             optimizer.zero_grad()
             net.train()
-            pred = net(inputs)[:, -1, :, :].squeeze()  # B,S,C,H,W
+            pred = net(inputs)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
             loss = lossfunction(pred, label)
             loss_aver = loss.item() / args.batch_size
             train_losses.append(loss_aver)

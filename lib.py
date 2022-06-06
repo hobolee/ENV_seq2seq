@@ -325,7 +325,7 @@ class DataInterpolate:
 
         # To be developed
         # if day < 5, just predict as 0
-        if day < 5 or day > len(self.operate_data) - 5:
+        if day < 5 or day > len(self.day_data) - 5:
             if hour > 0:
                 return self.day_data[day, hour - 1, station]
             elif day > 0:
@@ -333,7 +333,6 @@ class DataInterpolate:
             else:
                 return 0
 
-        # For now, suf_data is not used for reducing performance
         pre_data, suf_data = [], []
         count = 0
         for i in range(day - 1):

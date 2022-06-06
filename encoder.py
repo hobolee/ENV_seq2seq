@@ -14,6 +14,7 @@ class Encoder(nn.Module):
             # index sign from 1
             setattr(self, 'stage' + str(index), make_layers(params))
             setattr(self, 'rnn' + str(index), rnn)
+        pass
 
     def forward_by_stage(self, inputs, subnet, rnn):
         seq_number, batch_size, input_channel, height, width = inputs.size()
@@ -21,7 +22,7 @@ class Encoder(nn.Module):
         inputs = subnet(inputs)
         inputs = torch.reshape(inputs, (seq_number, batch_size, inputs.size(1),
                                         inputs.size(2), inputs.size(3)))
-        outputs_stage, state_stage = rnn(inputs, None)
+        outputs_stage, state_stage = rnn(inputs, None, seq_len=72)
         return outputs_stage, state_stage
 
     def forward(self, inputs):

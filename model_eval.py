@@ -18,7 +18,7 @@ from encoder import Encoder
 from decoder import Decoder
 from model import ED
 from net_params import convlstm_encoder_params, convlstm_decoder_params, convgru_encoder_params, convgru_decoder_params
-# import cartopy.crs as ccrs
+import cartopy.crs as ccrs
 from tensorboardX import SummaryWriter
 
 
@@ -45,9 +45,8 @@ def eval():
     args = parser.parse_args()
 
     trainFolder = ADMS(is_train=True,
-                       root='/Users/lihaobo/PycharmProjects/ENV_prediction/NO2/',
-                       n_frames_input=args.frames_input,
-                       n_frames_output=args.frames_output)
+                       root='/Users/lihaobo/PycharmProjects/data_no2/',
+                       mode='valid')
     trainLoader = torch.utils.data.DataLoader(trainFolder,
                                               batch_size=args.batch_size,
                                               shuffle=False)
@@ -77,6 +76,8 @@ def eval():
         net.eval()
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
         for i, (idx, targetVar, inputVar) in enumerate(t):
+            if i == 10:
+                break
             inputs = inputVar  # B,S,C,H,W
             label = targetVar.squeeze()  # B,S,C,H,W
             pred = net(inputs)[:, -1, :, :].squeeze()  # B,S,C,H,W
@@ -99,7 +100,7 @@ def eval():
     tb.flush()
     tb.close()
     res = [pred_list, label_list]
-    np.save('eval_result2', res)
+    np.save('eval_result1', res)
 
 
 def eval_plot():
@@ -108,28 +109,30 @@ def eval_plot():
     plot the loss curve
     :return:
     '''
-    result = np.load('eval_result2.npy', allow_pickle=True)
+    aqms = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')[:, :, 3759+24]
+    aqms = aqms.numpy()
+    result = np.load('eval_result1.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
-    pred = pred_list[:, :, 100]
-    label = label_list[:, :, 100]
+    pred = pred_list[:, :, 8]
+    label = label_list[:, :, 8]
     lng_lat = np.load('/Users/lihaobo/PycharmProjects/ENV/lnglat-no-receptors.npz')
     lon = lng_lat['lngs'][:73200].reshape([240, 305])[:, :304]
     lat = lng_lat['lats'][:73200].reshape([240, 305])[:, :304]
     fig = plt.figure()
     ax = plt.axes(projection=ccrs.PlateCarree())
-    cf = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree())
+    cf = plt.contourf(lon, lat, pred+aqms*1.88+9, 60, transform=ccrs.PlateCarree())
     ax.coastlines()
     cbar = fig.colorbar(cf, ax=ax, shrink=1)
     fig = plt.figure()
     ax = plt.axes(projection=ccrs.PlateCarree())
-    cf = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree())
+    cf = plt.contourf(lon, lat, label+aqms*1.88, 60, transform=ccrs.PlateCarree())
     ax.coastlines()
     cbar = fig.colorbar(cf, ax=ax, shrink=1)
     plt.show()
 
 
 if __name__ == "__main__":
-    eval()
-    # eval_plot()
+    # eval()
+    eval_plot()
     # eval_adms_station()

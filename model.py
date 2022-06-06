@@ -5,7 +5,6 @@ from utils import make_layers
 
 
 class activation():
-
     def __init__(self, act_type, negative_slope=0.2, inplace=True):
         super().__init__()
         self._act_type = act_type
