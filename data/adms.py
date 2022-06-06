@@ -37,7 +37,7 @@ class ADMS(data.Dataset):
         self.adms = load_adms(root)
         # self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
         self.adms = self.adms.view(-1, 1, 240, 304)
-        self.length = len(self.adms) - 72 - 24
+        self.length = len(self.adms) - 48 - 24
         self.example_indices = list(range(self.length))
 
         # keep the same shuffle result, train:valid:test = 8:1:1
@@ -60,9 +60,9 @@ class ADMS(data.Dataset):
         self.image_size_ = [240, 304]
 
     def __getitem__(self, idx):
-        idx2 = self.example_indices[idx] + 72
+        idx2 = self.example_indices[idx] + 48
         print(idx2)
-        input = self.adms[idx2-72:idx2, :, :, :]
+        input = self.adms[idx2-48:idx2, :, :, :]
         output = self.adms[idx2+23, :, :, :]
         out = [idx, output, input]
         return out
