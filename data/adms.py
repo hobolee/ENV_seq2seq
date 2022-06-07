@@ -65,9 +65,10 @@ class ADMS(data.Dataset):
     def __getitem__(self, idx):
         idx2 = self.example_indices[idx] + 48
         # print(idx2)
-        input = self.aqms[idx2-48:idx2, :, :, :]
-        output = self.adms[idx2+23, :, :, :]
-        out = [idx, output, input]
+        input = self.aqms[idx2-48:idx2, ...]
+        output = self.adms[idx2+23, ...]
+        input_decoder = self.aqms[idx2, ...]
+        out = [idx, output, input, input_decoder]
         return out
 
     def __len__(self):
