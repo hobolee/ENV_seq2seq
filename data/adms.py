@@ -8,7 +8,7 @@ import random
 def load_adms(root):
     # Load MNIST dataset for generating training data.
     path = os.path.join(root, 'diff.pt')
-    adms = torch.load(path).float()[:, :, :]
+    adms = torch.load(path).float()[:, :, 10000:]
     adms = adms.permute(2, 0, 1)
     return adms
 
