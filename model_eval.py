@@ -20,6 +20,7 @@ from model import ED
 from net_params import convlstm_encoder_params, convlstm_decoder_params, convgru_encoder_params, convgru_decoder_params
 import cartopy.crs as ccrs
 from tensorboardX import SummaryWriter
+import matplotlib
 
 
 def eval():
@@ -27,7 +28,7 @@ def eval():
         eval the model
         :return: save the pred_list, label_list, train_loss, valid_loss
         '''
-    TIMESTAMP = "2022-06-01T00-00-00"
+    TIMESTAMP = "2022-06-07T00-00-00"
     save_dir = './save_model/' + TIMESTAMP
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size',
@@ -46,7 +47,7 @@ def eval():
 
     trainFolder = ADMS(is_train=True,
                        root='/Users/lihaobo/PycharmProjects/data_no2/',
-                       mode='valid')
+                       mode='all')
     trainLoader = torch.utils.data.DataLoader(trainFolder,
                                               batch_size=args.batch_size,
                                               shuffle=False)
@@ -75,14 +76,17 @@ def eval():
     with torch.no_grad():
         net.eval()
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
-        for i, (idx, targetVar, inputVar) in enumerate(t):
-            if i == 10:
+        for i, (idx, targetVar, inputVar, input_decoder) in enumerate(t):
+            if i == 1000:
                 break
             inputs = inputVar  # B,S,C,H,W
             label = targetVar.squeeze()  # B,S,C,H,W
-            pred = net(inputs)[:, -1, :, :].squeeze()  # B,S,C,H,W
-            if i == 0:
-                tb.add_graph(net, inputs)
+            input_decoder = input_decoder.to(device)
+            input_decoder = inputs.squeeze(dim=2)
+            input_decoder = None
+            pred = net(inputs, input_decoder)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
+            # if i == 0:
+            #     tb.add_graph(net, inputs, input_decoder)
             loss = lossfunction(pred, label)
             loss_aver = loss.item() / args.batch_size
             test_losses.append(loss_aver)
@@ -99,8 +103,8 @@ def eval():
 
     tb.flush()
     tb.close()
-    res = [pred_list, label_list]
-    np.save('eval_result1', res)
+    res = [pred_list[:, :, 1:], label_list[:, :, 1:]]
+    np.save('eval_result_1000_aqms2adms', res)
 
 
 def eval_plot():
@@ -109,30 +113,73 @@ def eval_plot():
     plot the loss curve
     :return:
     '''
-    aqms = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')[:, :, 3759+24]
-    aqms = aqms.numpy()
-    result = np.load('eval_result1.npy', allow_pickle=True)
+    result = np.load('eval_result_1000_aqms2adms.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
-    pred = pred_list[:, :, 8]
-    label = label_list[:, :, 8]
     lng_lat = np.load('/Users/lihaobo/PycharmProjects/ENV/lnglat-no-receptors.npz')
     lon = lng_lat['lngs'][:73200].reshape([240, 305])[:, :304]
     lat = lng_lat['lats'][:73200].reshape([240, 305])[:, :304]
-    fig = plt.figure()
-    ax = plt.axes(projection=ccrs.PlateCarree())
-    cf = plt.contourf(lon, lat, pred+aqms*1.88+9, 60, transform=ccrs.PlateCarree())
-    ax.coastlines()
-    cbar = fig.colorbar(cf, ax=ax, shrink=1)
-    fig = plt.figure()
-    ax = plt.axes(projection=ccrs.PlateCarree())
-    cf = plt.contourf(lon, lat, label+aqms*1.88, 60, transform=ccrs.PlateCarree())
-    ax.coastlines()
-    cbar = fig.colorbar(cf, ax=ax, shrink=1)
+    cor_list = []
+    for i in range(1000):
+        pred = pred_list[:, :, i]
+        label = label_list[:, :, i]
+        pred_vec = pred.flatten()
+        label_vec = label.flatten()
+        cor_list.append(np.corrcoef(pred_vec, label_vec)[0][1])
+        fig = plt.figure(figsize=(16, 6))
+        # norm = matplotlib.colors.Normalize(vmin=0, vmax=150)
+        ax1 = plt.axes([0.03, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
+        cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree())
+        ax1.coastlines()
+        ax1.set_title('prediction')
+        ax1.set_xlabel('lon')
+        ax1.set_ylabel('lat')
+        ax2 = plt.axes([0.46, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
+        cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree())
+        ax2.set_xlabel('lon')
+        ax2.set_title('label')
+        ax2.coastlines()
+        # plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
+        cax = plt.axes([0.92, 0.1, 0.025, 0.8])
+        cbar2 = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax)
+        # plt.show()
+        plt.savefig('figs_aqms2adms/a%s' % i)
+        plt.close(fig)
+    print(np.mean(cor_list))
+        # fig = plt.figure()
+        # ax = plt.axes(projection=ccrs.PlateCarree())
+        # cf = plt.contourf(lon, lat, adms, 60, transform=ccrs.PlateCarree())
+        # ax.coastlines()
+        # cbar = fig.colorbar(cf, ax=ax, shrink=1)
+        # fig = plt.figure()
+        # ax = plt.axes(projection=ccrs.PlateCarree())
+        # cf = plt.contourf(lon, lat, diff, 60, transform=ccrs.PlateCarree())
+        # ax.coastlines()
+        # cbar = fig.colorbar(cf, ax=ax, shrink=1)
+        # plt.show()
+
+
+def eval_ts():
+    station = [72, 168]
+    result = np.load('eval_result_1000_aqms2adms.npy', allow_pickle=True)
+    pred_list = result[0]
+    label_list = result[1]
+    pred_cbr = pred_list[station[0], station[1], :]
+    label_cbr = label_list[station[0], station[1], :]
+    pred_cbr = pred_cbr
+    label_cbr = label_cbr
+    print(np.corrcoef(pred_cbr, label_cbr))
+    r2 = 1 - np.sum((pred_cbr - label_cbr) ** 2) / np.sum((label_cbr - np.mean(label_cbr))**2)
+    print(r2)
+
+    plt.figure()
+    x = np.arange(1000)
+    plt.plot(x, pred_cbr, 'b', x, label_cbr, 'r')
     plt.show()
 
 
 if __name__ == "__main__":
     # eval()
-    eval_plot()
+    # eval_plot()
+    eval_ts()
     # eval_adms_station()

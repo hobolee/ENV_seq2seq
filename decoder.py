@@ -27,7 +27,7 @@ class Decoder(nn.Module):
         # input: 5D S*B*C*H*W
 
     def forward(self, hidden_states, input_decoder):
-        if input_decoder:
+        if input_decoder is not None:
             shape = hidden_states[-1].shape[-2:]
             input_decoder = torch.nn.functional.interpolate(input_decoder, size=shape)
             input_decoder = input_decoder.unsqueeze(0)
