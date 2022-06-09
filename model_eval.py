@@ -118,17 +118,23 @@ def eval_plot():
     lng_lat = np.load('/Users/lihaobo/PycharmProjects/ENV/lnglat-no-receptors.npz')
     lon = lng_lat['lngs'][:73200].reshape([240, 305])[:, :304]
     lat = lng_lat['lats'][:73200].reshape([240, 305])[:, :304]
+    weight = np.load('weight.npy')
+    weight = weight.reshape([-1, 14])
     cor_list = []
     for i in range(1000):
         aqms = aqms_data[:, :, i + 48 + 23 + 10000]
-        # adms = torch.load('/Users/lihaobo/PycharmProjects/data_no2/data_adms.pt')[i+48+23, :].view(240, 305)[:, :304]
-        # adms = adms.numpy()
-        # diff = torch.load('/Users/lihaobo/PycharmProjects/data_no2/diff.pt')[:, :, i+48+23]
-        # diff = diff.numpy()
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
         pred = pred + aqms * 1.88
         label = label + aqms * 1.88
+        stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
+                    [105, 169], [171, 171], [182, 270], [128, 146], [83, 60], [168, 100]]
+        aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[0, :]
+        diff = []
+        for j in range(14):
+            diff.append(pred[stations[j][0], stations[j][1]] - aqms_station[j] * 1.88)
+        diff_map = np.dot(weight, diff).reshape([240, 304, -1]).astype(float).squeeze()
+        pred = pred - diff_map
         pred_vec = pred.flatten()
         label_vec = label.flatten()
         cor_list.append(np.corrcoef(pred_vec, label_vec)[0][1])
@@ -149,46 +155,49 @@ def eval_plot():
         cax = plt.axes([0.92, 0.1, 0.025, 0.8])
         cbar2 = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax)
         # plt.show()
-        # plt.savefig('figs/a%s' % i)
+        plt.savefig('figs_with_aqms_diff/a%s' % i)
         plt.close(fig)
     print(np.mean(cor_list))
-        # fig = plt.figure()
-        # ax = plt.axes(projection=ccrs.PlateCarree())
-        # cf = plt.contourf(lon, lat, adms, 60, transform=ccrs.PlateCarree())
-        # ax.coastlines()
-        # cbar = fig.colorbar(cf, ax=ax, shrink=1)
-        # fig = plt.figure()
-        # ax = plt.axes(projection=ccrs.PlateCarree())
-        # cf = plt.contourf(lon, lat, diff, 60, transform=ccrs.PlateCarree())
-        # ax.coastlines()
-        # cbar = fig.colorbar(cf, ax=ax, shrink=1)
-        # plt.show()
 
 
 def eval_ts():
-    station = [168, 100]
     result = np.load('eval_result_1000.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
     aqms_data = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')
     aqms_data = aqms_data.numpy()
-    pred_cbr = pred_list[station[0], station[1], :]
-    label_cbr = label_list[station[0], station[1], :]
-    aqms = aqms_data[station[0], station[1], 10000+48+23:10000+48+23+1000]
-    pred_cbr = pred_cbr + aqms*1.88
-    label_cbr = label_cbr + aqms*1.88
-    print(np.corrcoef(pred_cbr, label_cbr))
-    r2 = 1 - np.sum((pred_cbr - label_cbr) ** 2) / np.sum((label_cbr - np.mean(label_cbr))**2)
-    print(r2)
+    weight = np.load('weight.npy')
+    weight = weight.reshape([-1, 14])
+    cor_list, pred_station, label_station = [], [], []
+    station = [78, 182]
+    for i in range(1000):
+        aqms = aqms_data[:, :, i + 48 + 23 + 10000]
+        pred = pred_list[:, :, i]
+        label = label_list[:, :, i]
+        pred = pred + aqms * 1.88
+        label = label + aqms * 1.88
+        stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
+                    [105, 169], [171, 171], [182, 270], [128, 146], [83, 60], [168, 100]]
+        aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[i + 48 + 23 + 10000, :]
+        diff = []
+        for j in range(14):
+            diff.append(pred[stations[j][0], stations[j][1]] - aqms_station[j] * 1.88)
+        diff_map = np.dot(weight, diff).reshape([240, 304, -1]).astype(float).squeeze()
+        pred = pred - diff_map
+        pred_station.append(pred[station[0], station[1]])
+        label_station.append(label[station[0], station[1]])
+    print(np.corrcoef(pred_station, label_station))
+    # r2 = 1 - np.sum((pred_station - label_station) ** 2) / np.sum((label_station - np.mean(label_station))**2)
+    # print(r2)
 
     plt.figure()
     x = np.arange(1000)
-    plt.plot(x, pred_cbr, 'b', x, label_cbr, 'r')
+    plt.plot(x, pred_station, 'b', x, label_station, 'r')
     plt.show()
 
 
 if __name__ == "__main__":
     # eval()
-    eval_plot()
-    # eval_ts()
+    # eval_plot()
+    eval_ts()
     # eval_adms_station()
