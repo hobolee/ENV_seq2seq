@@ -18,11 +18,11 @@ class CGRU_cell(nn.Module):
             nn.Conv2d(self.input_channels + self.num_features,
                       2 * self.num_features, self.filter_size, 1,
                       self.padding),
-            nn.GroupNorm(2 * self.num_features // 32, 2 * self.num_features))
+            nn.GroupNorm(2 * self.num_features // 8, 2 * self.num_features))
         self.conv2 = nn.Sequential(
             nn.Conv2d(self.input_channels + self.num_features,
                       self.num_features, self.filter_size, 1, self.padding),
-            nn.GroupNorm(self.num_features // 32, self.num_features))
+            nn.GroupNorm(self.num_features // 8, self.num_features))
 
     def forward(self, inputs=None, hidden_state=None, seq_len=10):
         # seq_len=10 for moving_mnist
@@ -73,7 +73,7 @@ class CLSTM_cell(nn.Module):
             nn.Conv2d(self.input_channels + self.num_features,
                       4 * self.num_features, self.filter_size, 1,
                       self.padding),
-            nn.GroupNorm(4 * self.num_features // 32, 4 * self.num_features))
+            nn.GroupNorm(4 * self.num_features // 16, 4 * self.num_features))
 
     def forward(self, inputs=None, hidden_state=None, seq_len=10):
         #  seq_len=10 for moving_mnist

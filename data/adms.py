@@ -7,9 +7,9 @@ import random
 
 def load_adms(root):
     # Load MNIST dataset for generating training data.
-    path = os.path.join(root, 'diff.pt')
-    adms = torch.load(path).float()[:, :, 10000:]
-    adms = adms.permute(2, 0, 1)
+    path = os.path.join(root, 'data_adms.pt')
+    adms = torch.load(path).float()[:, :]
+    # adms = adms.permute(2, 0, 1)
     return adms
 
 
@@ -35,8 +35,9 @@ class ADMS(data.Dataset):
         # self.length = int(1e4) if self.dataset is None else self.dataset.shape[0]
 
         self.adms = load_adms(root)
-        # self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
-        self.adms = self.adms.view(-1, 1, 240, 304)
+        self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
+        self.adms = self.adms[:, :, ::2, ::2]
+        # self.adms = self.adms.view(-1, 1, 240, 304)
         self.length = len(self.adms) - 48 - 24
         self.example_indices = list(range(self.length))
 
