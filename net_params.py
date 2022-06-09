@@ -43,9 +43,9 @@ convgru_encoder_params = [
     ],
 
     [
-        CGRU_cell(shape=(240, 304), input_channels=8, filter_size=5, num_features=32),
-        CGRU_cell(shape=(120, 152), input_channels=32, filter_size=5, num_features=48),
-        CGRU_cell(shape=(60, 76), input_channels=48, filter_size=5, num_features=48)
+        CGRU_cell(shape=(120, 152), input_channels=8, filter_size=5, num_features=32),
+        CGRU_cell(shape=(60, 76), input_channels=32, filter_size=5, num_features=48),
+        CGRU_cell(shape=(30, 38), input_channels=48, filter_size=5, num_features=48)
     ]
 ]
 
@@ -60,8 +60,8 @@ convgru_decoder_params = [
     ],
 
     [
+        CGRU_cell(shape=(30, 38), input_channels=48, filter_size=5, num_features=48),
         CGRU_cell(shape=(60, 76), input_channels=48, filter_size=5, num_features=48),
-        CGRU_cell(shape=(120, 152), input_channels=48, filter_size=5, num_features=48),
-        CGRU_cell(shape=(240, 304), input_channels=48, filter_size=5, num_features=32),
+        CGRU_cell(shape=(120, 152), input_channels=48, filter_size=5, num_features=32),
     ]
 ]

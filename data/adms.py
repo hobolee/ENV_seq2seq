@@ -39,6 +39,8 @@ class ADMS(data.Dataset):
         self.adms, self.aqms = load_adms(root)
         self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
         self.aqms = self.aqms.view(-1, 1, 240, 304)
+        self.aqms = self.aqms[:, :, ::2, ::2]
+        self.adms = self.adms[:, :, ::2, ::2]
         self.length = len(self.adms) - 48 - 24
         self.example_indices = list(range(self.length))
 
