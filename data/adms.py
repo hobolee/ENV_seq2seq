@@ -24,16 +24,6 @@ def load_adms_fixed(root):
 class ADMS(data.Dataset):
     def __init__(self, root, is_train, mode):
         super(ADMS, self).__init__()
-        # self.dataset = None
-        # if is_train:
-        #     self.adms = load_adms(root)
-        #     self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
-        # else:
-        #     self.dataset = load_adms_fixed(root)
-        #     self.dataset = self.dataset.view(-1, 1, 240, 305)[:, :, :, :304]
-        #     pass # to do
-        # self.length = int(1e4) if self.dataset is None else self.dataset.shape[0]
-
         self.adms = load_adms(root)
         self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
         self.adms = self.adms[:, :, ::2, ::2]
@@ -62,9 +52,9 @@ class ADMS(data.Dataset):
 
     def __getitem__(self, idx):
         idx2 = self.example_indices[idx] + 48
-        print(idx2)
-        input = self.adms[idx2-48:idx2, :, :, :]
-        output = self.adms[idx2+23, :, :, :]
+        # print(idx2)
+        input = self.adms[idx2-48:idx2, ...]
+        output = self.adms[idx2+23, ...]
         out = [idx, output, input]
         return out
 

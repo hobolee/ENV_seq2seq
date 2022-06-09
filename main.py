@@ -140,7 +140,7 @@ def train():
             net.train()
             pred = net(inputs)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
             loss = lossfunction(pred, label)
-            loss_aver = loss.item() / args.batch_size
+            loss_aver = loss.item()
             train_losses.append(loss_aver)
             loss.backward()
             torch.nn.utils.clip_grad_value_(net.parameters(), clip_value=10.0)
@@ -161,7 +161,7 @@ def train():
                 label = targetVar.to(device).squeeze()
                 pred = net(inputs)[:, -1, :, :].squeeze()
                 loss = lossfunction(pred, label)
-                loss_aver = loss.item() / args.batch_size
+                loss_aver = loss.item()
                 # record validation loss
                 valid_losses.append(loss_aver)
                 # print ("validloss: {:.6f},  epoch : {:02d}".format(loss_aver,epoch),end = '\r', flush=True)

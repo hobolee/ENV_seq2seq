@@ -28,8 +28,8 @@ class Decoder(nn.Module):
 
     def forward(self, hidden_states):
         inputs = self.forward_by_stage(None, hidden_states[-1],
-                                       getattr(self, 'stage4'),
-                                       getattr(self, 'rnn4'))
+                                       getattr(self, 'stage3'),
+                                       getattr(self, 'rnn3'))
         for i in list(range(1, self.blocks))[::-1]:
             inputs = self.forward_by_stage(inputs, hidden_states[i - 1],
                                            getattr(self, 'stage' + str(i)),
