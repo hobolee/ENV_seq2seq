@@ -6,11 +6,13 @@ import random
 
 
 def load_adms(root):
-    # Load MNIST dataset for generating training data.
-    path = os.path.join(root, 'diff.pt')
-    adms = torch.load(path).float()[:, :, 10000:]
-    adms = adms.permute(2, 0, 1)
-    return adms
+    path = os.path.join(root, 'aqms_after_IDW.pt')
+    aqms = torch.load(path).float()[:, :, :]
+    aqms = aqms.permute(2, 0, 1)
+    path = os.path.join(root, 'data_adms.pt')
+    adms = torch.load(path).float()
+    # adms = adms.permute(2, 0, 1)
+    return adms, aqms
 
 
 def load_adms_fixed(root):
@@ -34,9 +36,9 @@ class ADMS(data.Dataset):
         #     pass # to do
         # self.length = int(1e4) if self.dataset is None else self.dataset.shape[0]
 
-        self.adms = load_adms(root)
-        # self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
-        self.adms = self.adms.view(-1, 1, 240, 304)
+        self.adms, self.aqms = load_adms(root)
+        self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
+        self.aqms = self.aqms.view(-1, 1, 240, 304)
         self.length = len(self.adms) - 48 - 24
         self.example_indices = list(range(self.length))
 
@@ -62,9 +64,10 @@ class ADMS(data.Dataset):
     def __getitem__(self, idx):
         idx2 = self.example_indices[idx] + 48
         print(idx2)
-        input = self.adms[idx2-48:idx2, :, :, :]
-        output = self.adms[idx2+23, :, :, :]
-        out = [idx, output, input]
+        input = self.adms[idx2-48:idx2, ...]
+        output = self.adms[idx2+23, ...]
+        input_decoder = self.adms[idx2, ...]
+        out = [idx, output, input, input_decoder]
         return out
 
     def __len__(self):

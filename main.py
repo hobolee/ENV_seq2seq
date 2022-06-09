@@ -17,7 +17,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2022-06-01T00-00-00"
+TIMESTAMP = "2022-06-09T00-00-00_with_diff"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -133,12 +133,14 @@ def train():
         # train the model #
         ###################
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
-        for i, (idx, targetVar, inputVar) in enumerate(t):
+        for i, (idx, targetVar, inputVar, input_decoder) in enumerate(t):
             inputs = inputVar.to(device)  # B,S,C,H,W
             label = targetVar.to(device).squeeze()  # B,S,C,H,W
+            # input_decoder = input_decoder.to(device)
+            input_decoder = inputs.squeeze(dim=2)
             optimizer.zero_grad()
             net.train()
-            pred = net(inputs)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
+            pred = net(inputs, input_decoder)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
             loss = lossfunction(pred, label)
             loss_aver = loss.item() / args.batch_size
             train_losses.append(loss_aver)
@@ -156,10 +158,11 @@ def train():
         with torch.no_grad():
             net.eval()
             t = tqdm(validLoader, leave=False, total=len(validLoader))
-            for i, (idx, targetVar, inputVar) in enumerate(t):
+            for i, (idx, targetVar, inputVar, input_decoder) in enumerate(t):
                 inputs = inputVar.to(device)
                 label = targetVar.to(device).squeeze()
-                pred = net(inputs)[:, -1, :, :].squeeze()
+                input_decoder = inputs.squeeze(dim=2)
+                pred = net(inputs, input_decoder)[:, -1, :, :].squeeze()
                 loss = lossfunction(pred, label)
                 loss_aver = loss.item() / args.batch_size
                 # record validation loss

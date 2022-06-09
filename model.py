@@ -29,7 +29,7 @@ class ED(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, input):
+    def forward(self, input, input_decoder):
         state = self.encoder(input)
-        output = self.decoder(state)
+        output = self.decoder(state, input_decoder)
         return output
