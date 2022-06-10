@@ -136,8 +136,9 @@ def train():
         for i, (idx, targetVar, inputVar, input_decoder) in enumerate(t):
             inputs = inputVar.to(device)  # B,S,C,H,W
             label = targetVar.to(device).squeeze()  # B,S,C,H,W
-            input_decoder = input_decoder.to(device)
+            # input_decoder = input_decoder.to(device)
             # input_decoder = inputs.squeeze(dim=2)
+            input_decoder = None
             optimizer.zero_grad()
             net.train()
             pred = net(inputs, input_decoder)[:, -1, :, :, :].squeeze()  # B,S,C,H,W

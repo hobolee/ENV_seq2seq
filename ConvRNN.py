@@ -75,7 +75,7 @@ class CLSTM_cell(nn.Module):
                       self.padding),
             nn.GroupNorm(4 * self.num_features // 32, 4 * self.num_features))
 
-    def forward(self, inputs=None, hidden_state=None, seq_len=10):
+    def forward(self, inputs=None, hidden_state=None, seq_len=24):
         #  seq_len=10 for moving_mnist
         if hidden_state is None:
             hx = torch.zeros(inputs.size(1), self.num_features, self.shape[0],

@@ -11,29 +11,20 @@ def load_adms(root):
     aqms = aqms.permute(2, 0, 1)
     path = os.path.join(root, 'diff.pt')
     adms = torch.load(path).float()
-    # adms = adms.permute(2, 0, 1)
+    adms = adms.permute(2, 0, 1)
     return adms, aqms
 
 
 class ADMS(data.Dataset):
     def __init__(self, root, is_train, mode):
         super(ADMS, self).__init__()
-        # self.dataset = None
-        # if is_train:
-        #     self.adms = load_adms(root)
-        #     self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
-        # else:
-        #     self.dataset = load_adms_fixed(root)
-        #     self.dataset = self.dataset.view(-1, 1, 240, 305)[:, :, :, :304]
-        #     pass # to do
-        # self.length = int(1e4) if self.dataset is None else self.dataset.shape[0]
-
         self.adms, self.aqms = load_adms(root)
-        self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
+        # self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
+        self.adms = self.adms.view(-1, 1, 240, 304)
         self.aqms = self.aqms.view(-1, 1, 240, 304)
         self.aqms = self.aqms[:, :, ::2, ::2]
         self.adms = self.adms[:, :, ::2, ::2]
-        self.length = len(self.adms) - 48 - 24
+        self.length = len(self.adms) - 24 - 24
         self.example_indices = list(range(self.length))
 
         # keep the same shuffle result, train:valid:test = 8:1:1
@@ -56,12 +47,12 @@ class ADMS(data.Dataset):
         self.image_size_ = [240, 304]
 
     def __getitem__(self, idx):
-        idx2 = self.example_indices[idx] + 48
+        idx2 = self.example_indices[idx] + 24
         # print(idx2)
-        input = self.adms[idx2-48:idx2, ...]
+        input = self.adms[idx2-24:idx2, ...]
         output = self.adms[idx2+23, ...]
-        # input_decoder = self.aqms[idx2-48:idx2, ...]
-        input_decoder = None
+        input_decoder = self.aqms[idx2-24:idx2, ...]
+        # input_decoder = None
         out = [idx, output, input, input_decoder]
         return out
 

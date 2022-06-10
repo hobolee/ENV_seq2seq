@@ -83,7 +83,7 @@ def eval():
         eval the model
         :return: save the pred_list, label_list, train_loss, valid_loss
         '''
-    TIMESTAMP = "2022-06-10T00-00-00_48to48"
+    TIMESTAMP = "2022-06-10T00-00-00_24to24"
     save_dir = './save_model/' + TIMESTAMP
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size',
@@ -180,7 +180,7 @@ def eval_plot():
     weight = weight.reshape([-1, 14])
     cor_list = []
     for i in range(1000):
-        aqms = aqms_data[:, :, i + 48 + 23]
+        aqms = aqms_data[:, :, i + 24 + 23]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
         print(cal_mse())
@@ -204,7 +204,7 @@ def eval_ts():
     for i in range(1000):
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
-        # aqms = aqms_data[:, :, i + 48 + 23]
+        # aqms = aqms_data[:, :, i + 24 + 23]
         # pred, label = diff2adms(pred, label, aqms)
         pred = aqms_correction(pred, weight, i)
         pred_station.append(pred[station[0]//2, station[1]//2])

@@ -22,7 +22,7 @@ class Encoder(nn.Module):
         inputs = subnet(inputs)
         inputs = torch.reshape(inputs, (seq_number, batch_size, inputs.size(1),
                                         inputs.size(2), inputs.size(3)))
-        outputs_stage, state_stage = rnn(inputs, None, seq_len=48)
+        outputs_stage, state_stage = rnn(inputs, None, seq_len=24)
         return outputs_stage, state_stage
 
     def forward(self, inputs):
