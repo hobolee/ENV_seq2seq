@@ -9,18 +9,10 @@ def load_adms(root):
     path = os.path.join(root, 'aqms_after_IDW.pt')
     aqms = torch.load(path).float()[:, :, :]
     aqms = aqms.permute(2, 0, 1)
-    path = os.path.join(root, 'data_adms.pt')
+    path = os.path.join(root, 'diff.pt')
     adms = torch.load(path).float()
     # adms = adms.permute(2, 0, 1)
     return adms, aqms
-
-
-def load_adms_fixed(root):
-    # Load the fixed dataset
-    path = os.path.join(root, 'data_adms.pt')
-    dataset = torch.load(path).float()[:200, :]
-    # dataset = torch.cat((dataset[:5381, :], dataset[5381, :].view(1, -1), dataset[5381:, :]))
-    return dataset
 
 
 class ADMS(data.Dataset):
@@ -65,10 +57,11 @@ class ADMS(data.Dataset):
 
     def __getitem__(self, idx):
         idx2 = self.example_indices[idx] + 48
-        print(idx2)
+        # print(idx2)
         input = self.adms[idx2-48:idx2, ...]
         output = self.adms[idx2+23, ...]
-        input_decoder = self.adms[idx2, ...]
+        # input_decoder = self.aqms[idx2-48:idx2, ...]
+        input_decoder = None
         out = [idx, output, input, input_decoder]
         return out
 

@@ -23,12 +23,67 @@ from tensorboardX import SummaryWriter
 import matplotlib
 
 
+def aqms_correction(pred, weight, i):
+    stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
+                [105, 169], [171, 171], [182, 270], [128, 146], [83, 60], [168, 100]]
+    aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[i, :]
+    diff = []
+    for j in range(14):
+        diff.append(pred[stations[j][0] // 2, stations[j][1] // 2] - aqms_station[j] * 1.88)
+    diff_map = np.dot(weight, diff).reshape([240, 304, -1]).astype(float).squeeze()[::2, ::2]
+    pred = pred - diff_map
+    return pred
+
+
+def cal_cor(pred, label):
+    pred_vec = pred.flatten()
+    label_vec = label.flatten()
+    return np.corrcoef(pred_vec, label_vec)[0][1]
+
+
+def plot(pred, label, lon, lat, i):
+    fig = plt.figure(figsize=(16, 6))
+    # norm = matplotlib.colors.Normalize(vmin=0, vmax=150)
+    ax1 = plt.axes([0.03, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
+    cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree())
+    ax1.coastlines()
+    ax1.set_title('prediction')
+    ax1.set_xlabel('lon')
+    ax1.set_ylabel('lat')
+    ax2 = plt.axes([0.46, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
+    cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree())
+    ax2.set_xlabel('lon')
+    ax2.set_title('label')
+    ax2.coastlines()
+    # plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
+    cax = plt.axes([0.92, 0.1, 0.025, 0.8])
+    cbar2 = fig.colorbar(cf1, ax=[ax1, ax2], shrink=1, cax=cax)
+    plt.show()
+    # plt.savefig('figs_input_decoder/a%s' % i)
+    plt.close(fig)
+
+
+def diff2adms(pred, label, aqms):
+    pred = pred + aqms * 1.88
+    label = label + aqms * 1.88
+    return pred, label
+
+
+def cal_r2(pred, label):
+    r2 = 1 - np.sum((pred - label) ** 2) / np.sum((label - np.mean(label))**2)
+    return r2
+
+
+def cal_mse(pred, label):
+    return  (np.square(pred - label)).mean(axis=None)
+
+
 def eval():
     '''
         eval the model
         :return: save the pred_list, label_list, train_loss, valid_loss
         '''
-    TIMESTAMP = "2022-06-06T00-00-00"
+    TIMESTAMP = "2022-06-10T00-00-00_48to48"
     save_dir = './save_model/' + TIMESTAMP
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size',
@@ -70,22 +125,25 @@ def eval():
 
     # to track the validation loss as the model trains
     test_losses = []
-    label_list, pred_list = np.zeros([240, 304]), np.zeros([240, 304])
+    label_list, pred_list = np.zeros([120, 152]), np.zeros([120, 152])
 
     tb = SummaryWriter()
     with torch.no_grad():
         net.eval()
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
-        for i, (idx, targetVar, inputVar) in enumerate(t):
+        for i, (idx, targetVar, inputVar, input_decoder) in enumerate(t):
             if i == 1000:
                 break
             inputs = inputVar  # B,S,C,H,W
             label = targetVar.squeeze()  # B,S,C,H,W
-            pred = net(inputs)[:, -1, :, :].squeeze()  # B,S,C,H,W
-            if i == 0:
-                tb.add_graph(net, inputs)
+            # input_decoder = input_decoder.to(device)
+            # input_decoder = inputs.squeeze(dim=2)
+            input_decoder = None
+            pred = net(inputs, input_decoder)[:, -1, :, :].squeeze()  # B,S,C,H,W
+            # if i == 0:
+            #     tb.add_graph(net, inputs)
             loss = lossfunction(pred, label)
-            loss_aver = loss.item() / args.batch_size
+            loss_aver = loss.item()
             test_losses.append(loss_aver)
             label = label.numpy()
             pred = pred.numpy()
@@ -101,7 +159,7 @@ def eval():
     tb.flush()
     tb.close()
     res = [pred_list[:, :, 1:], label_list[:, :, 1:]]
-    np.save('eval_result_1000', res)
+    np.save('eval_result_1000_input_decoder', res)
 
 
 def eval_plot():
@@ -110,58 +168,31 @@ def eval_plot():
     plot the loss curve
     :return:
     '''
-    result = np.load('eval_result_1000.npy', allow_pickle=True)
+    result = np.load('eval_result_1000_input_decoder.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
     aqms_data = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')
     aqms_data = aqms_data.numpy()
     lng_lat = np.load('/Users/lihaobo/PycharmProjects/ENV/lnglat-no-receptors.npz')
-    lon = lng_lat['lngs'][:73200].reshape([240, 305])[:, :304]
-    lat = lng_lat['lats'][:73200].reshape([240, 305])[:, :304]
+    lon = lng_lat['lngs'][:73200].reshape([240, 305])[:, :304][::2, ::2]
+    lat = lng_lat['lats'][:73200].reshape([240, 305])[:, :304][::2, ::2]
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list = []
     for i in range(1000):
-        aqms = aqms_data[:, :, i + 48 + 23 + 10000]
+        aqms = aqms_data[:, :, i + 48 + 23]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
-        pred = pred + aqms * 1.88
-        label = label + aqms * 1.88
-        stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
-                    [105, 169], [171, 171], [182, 270], [128, 146], [83, 60], [168, 100]]
-        aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[0, :]
-        diff = []
-        for j in range(14):
-            diff.append(pred[stations[j][0], stations[j][1]] - aqms_station[j] * 1.88)
-        diff_map = np.dot(weight, diff).reshape([240, 304, -1]).astype(float).squeeze()
-        pred = pred - diff_map
-        pred_vec = pred.flatten()
-        label_vec = label.flatten()
-        cor_list.append(np.corrcoef(pred_vec, label_vec)[0][1])
-        fig = plt.figure(figsize=(16, 6))
-        # norm = matplotlib.colors.Normalize(vmin=0, vmax=150)
-        ax1 = plt.axes([0.03, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
-        cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree())
-        ax1.coastlines()
-        ax1.set_title('prediction')
-        ax1.set_xlabel('lon')
-        ax1.set_ylabel('lat')
-        ax2 = plt.axes([0.46, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
-        cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree())
-        ax2.set_xlabel('lon')
-        ax2.set_title('label')
-        ax2.coastlines()
-        # plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
-        cax = plt.axes([0.92, 0.1, 0.025, 0.8])
-        cbar2 = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax)
-        # plt.show()
-        plt.savefig('figs_with_aqms_diff/a%s' % i)
-        plt.close(fig)
+        print(cal_mse())
+        pred = aqms_correction(pred, weight, i)
+        cor = cal_cor(pred, label)
+        cor_list.append(cor)
+        plot(pred, label, lon, lat, i)
     print(np.mean(cor_list))
 
 
 def eval_ts():
-    result = np.load('eval_result_1000.npy', allow_pickle=True)
+    result = np.load('eval_result_1000_input_decoder.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
     aqms_data = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')
@@ -169,30 +200,20 @@ def eval_ts():
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station = [], [], []
-    station = [78, 182]
+    station = [100, 182]
     for i in range(1000):
-        aqms = aqms_data[:, :, i + 48 + 23 + 10000]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
-        pred = pred + aqms * 1.88
-        label = label + aqms * 1.88
-        stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
-                    [105, 169], [171, 171], [182, 270], [128, 146], [83, 60], [168, 100]]
-        aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[i + 48 + 23 + 10000, :]
-        diff = []
-        for j in range(14):
-            diff.append(pred[stations[j][0], stations[j][1]] - aqms_station[j] * 1.88)
-        diff_map = np.dot(weight, diff).reshape([240, 304, -1]).astype(float).squeeze()
-        pred = pred - diff_map
-        pred_station.append(pred[station[0], station[1]])
-        label_station.append(label[station[0], station[1]])
-    print(np.corrcoef(pred_station, label_station))
-    # r2 = 1 - np.sum((pred_station - label_station) ** 2) / np.sum((label_station - np.mean(label_station))**2)
-    # print(r2)
+        # aqms = aqms_data[:, :, i + 48 + 23]
+        # pred, label = diff2adms(pred, label, aqms)
+        pred = aqms_correction(pred, weight, i)
+        pred_station.append(pred[station[0]//2, station[1]//2])
+        label_station.append(label[station[0]//2, station[1]//2])
+    print(np.corrcoef(pred_station[72:], label_station[:-72]))
 
     plt.figure()
-    x = np.arange(1000)
-    plt.plot(x, pred_station, 'b', x, label_station, 'r')
+    x = np.arange(928)
+    plt.plot(x, pred_station[72:], 'b', x, label_station[:-72], 'r')
     plt.show()
 
 

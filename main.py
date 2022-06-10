@@ -17,7 +17,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2022-06-09T00-00-00_with_diff"
+TIMESTAMP = "2022-06-10T00-00-00_48to48"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -136,8 +136,8 @@ def train():
         for i, (idx, targetVar, inputVar, input_decoder) in enumerate(t):
             inputs = inputVar.to(device)  # B,S,C,H,W
             label = targetVar.to(device).squeeze()  # B,S,C,H,W
-            # input_decoder = input_decoder.to(device)
-            input_decoder = inputs.squeeze(dim=2)
+            input_decoder = input_decoder.to(device)
+            # input_decoder = inputs.squeeze(dim=2)
             optimizer.zero_grad()
             net.train()
             pred = net(inputs, input_decoder)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
@@ -161,7 +161,9 @@ def train():
             for i, (idx, targetVar, inputVar, input_decoder) in enumerate(t):
                 inputs = inputVar.to(device)
                 label = targetVar.to(device).squeeze()
-                input_decoder = inputs.squeeze(dim=2)
+                # input_decoder = input_decoder.to(device)
+                # input_decoder = inputs.squeeze(dim=2)
+                input_decoder = None
                 pred = net(inputs, input_decoder)[:, -1, :, :].squeeze()
                 loss = lossfunction(pred, label)
                 loss_aver = loss.item() / args.batch_size
