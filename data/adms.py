@@ -13,14 +13,6 @@ def load_adms(root):
     return adms
 
 
-def load_adms_fixed(root):
-    # Load the fixed dataset
-    path = os.path.join(root, 'data_adms.pt')
-    dataset = torch.load(path).float()[:200, :]
-    # dataset = torch.cat((dataset[:5381, :], dataset[5381, :].view(1, -1), dataset[5381:, :]))
-    return dataset
-
-
 class ADMS(data.Dataset):
     def __init__(self, root, is_train, mode):
         super(ADMS, self).__init__()
@@ -28,7 +20,7 @@ class ADMS(data.Dataset):
         self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
         self.adms = self.adms[:, :, ::2, ::2]
         # self.adms = self.adms.view(-1, 1, 240, 304)
-        self.length = len(self.adms) - 48 - 24
+        self.length = len(self.adms) - 24 - 24
         self.example_indices = list(range(self.length))
 
         # keep the same shuffle result, train:valid:test = 8:1:1
@@ -51,9 +43,8 @@ class ADMS(data.Dataset):
         self.image_size_ = [240, 304]
 
     def __getitem__(self, idx):
-        idx2 = self.example_indices[idx] + 48
-        # print(idx2)
-        input = self.adms[idx2-48:idx2, ...]
+        idx2 = self.example_indices[idx] + 24
+        input = self.adms[idx2-24:idx2, ...]
         output = self.adms[idx2+23, ...]
         out = [idx, output, input]
         return out
