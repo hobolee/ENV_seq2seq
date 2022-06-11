@@ -63,6 +63,13 @@ def plot(pred, label, lon, lat, i):
     plt.close(fig)
 
 
+def mean_corection(pred, label):
+    mean_pred = np.mean(pred)
+    mean_label = np.mean(label)
+    pred = pred - (mean_pred - mean_label)
+    return pred
+
+
 def diff2adms(pred, label, aqms):
     pred = pred + aqms * 1.88
     label = label + aqms * 1.88
@@ -179,13 +186,27 @@ def eval_plot():
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list = []
+    mse_before, mse_after, mse_before_n, mse_after_n, mse_before_m, mse_after_m = [], [], [], [], [], []
     for i in range(1000):
-        aqms = aqms_data[:, :, i + 72 + 23][::2, ::2]
-        pred = pred_list[:, :, i]
+        aqms = aqms_data[::2, ::2, i + 72 + 23]
+        pred = pred_list[:, :, i]*3
         label = label_list[:, :, i]
-        # pred, label = diff2adms(pred, label, aqms)
-        # pred = aqms_correction(pred, weight, i)
-        # print(cal_mse())
+        pred, label = diff2adms(pred, label, aqms)
+        mse_b_m = cal_mse(pred, aqms)
+        pred = mean_corection(pred, aqms)
+        mse_a_m = cal_mse(pred, label)
+        mse_before_m.append(mse_b_m)
+        mse_after_m.append(mse_a_m)
+        mse_b = cal_mse(pred, label)
+        pred = aqms_correction(pred, weight, i)
+        mse_a = cal_mse(pred, label)
+        mse_before.append(mse_b)
+        mse_after.append(mse_a)
+        # mse_b_n = cal_mse(pred, label)
+        # pred = negetive_correction(pred)
+        # mse_a_n = cal_mse(pred, label)
+        # mse_before_n.append(mse_b_n)
+        # mse_after_n.append(mse_a_n)
         cor = cal_cor(pred, label)
         cor_list.append(cor)
         plot(pred, label, lon, lat, i)
@@ -203,11 +224,12 @@ def eval_ts():
     cor_list, pred_station, label_station = [], [], []
     station = [60, 120]
     for i in range(1000):
-        aqms = aqms_data[:, :, i + 72 + 23][::2, ::2]
-        pred = pred_list[:, :, i]
+        aqms = aqms_data[::2, ::2, i + 72 + 23]
+        pred = pred_list[:, :, i]*3
         label = label_list[:, :, i]
-        # pred, label = diff2adms(pred, label, aqms)
-        # pred = aqms_correction(pred, weight, i)
+        pred, label = diff2adms(pred, label, aqms)
+        pred = mean_corection(pred, aqms)
+        pred = aqms_correction(pred, weight, i)
         pred_station.append(pred[station[0]//2, station[1]//2])
         label_station.append(label[station[0]//2, station[1]//2])
     lag = 0
@@ -227,6 +249,6 @@ def eval_ts():
 
 if __name__ == "__main__":
     # eval()
-    # eval_plot()
-    eval_ts()
+    eval_plot()
+    # eval_ts()
     # eval_adms_station()
