@@ -94,7 +94,7 @@ def train():
     # initialize the early_stopping object
     early_stopping = EarlyStopping(patience=20, verbose=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+    device = torch.device("mps")
     if torch.cuda.device_count() > 1:
         net = nn.DataParallel(net)
     net.to(device)
