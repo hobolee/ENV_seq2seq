@@ -17,7 +17,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2022-06-09T00-00-00_low"
+TIMESTAMP = "2022-06-11T00-00-00_48to1"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -93,7 +93,7 @@ def train():
     tb = SummaryWriter(run_dir)
     # initialize the early_stopping object
     early_stopping = EarlyStopping(patience=20, verbose=True)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "mps")
 
     if torch.cuda.device_count() > 1:
         net = nn.DataParallel(net)
