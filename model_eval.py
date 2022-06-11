@@ -26,7 +26,7 @@ import matplotlib
 def aqms_correction(pred, weight, i):
     stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
                 [105, 169], [171, 171], [182, 270], [128, 146], [83, 60], [168, 100]]
-    aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[i, :]
+    aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[i + 24 + 23, :]
     diff = []
     for j in range(14):
         diff.append(pred[stations[j][0] // 2, stations[j][1] // 2] - aqms_station[j] * 1.88)
@@ -80,7 +80,7 @@ def plot(pred, label, lon, lat, i, mode):
     if mode == 'show':
         plt.show()
     elif mode == 'save':
-        plt.savefig('figs_low/a%s' % i)
+        plt.savefig('figs_low_24to24/a%s' % i)
     plt.close(fig)
 
 
@@ -104,7 +104,7 @@ def eval():
         eval the model
         :return: save the pred_list, label_list, train_loss, valid_loss
         '''
-    TIMESTAMP = "2022-06-09T00-00-00_low"
+    TIMESTAMP = "2022-06-10T00-00-00_low"
     save_dir = './save_model/' + TIMESTAMP
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size',
@@ -132,17 +132,16 @@ def eval():
     encoder = Encoder(encoder_params[0], encoder_params[1])
     decoder = Decoder(decoder_params[0], decoder_params[1])
     net = ED(encoder, decoder)
-    device = torch.device("cpu")
+    device = torch.device("mps")
     if torch.cuda.device_count() > 1:
         net = nn.DataParallel(net)
-    net.to(device)
-
     print('==> loading existing model')
     model_info = torch.load(os.path.join(save_dir, 'checkpoint.pth.tar'), map_location=torch.device('cpu'))
     net.load_state_dict(model_info['state_dict'])
     optimizer = torch.optim.Adam(net.parameters())
     optimizer.load_state_dict(model_info['optimizer'])
     lossfunction = nn.MSELoss()
+    net.to(device)
 
     # to track the validation loss as the model trains
     test_losses = []
@@ -153,18 +152,18 @@ def eval():
         net.eval()
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
         for i, (idx, targetVar, inputVar) in enumerate(t):
-            if i == 1000:
+            if i == 100:
                 break
-            inputs = inputVar  # B,S,C,H,W
-            label = targetVar.squeeze()  # B,S,C,H,W
+            inputs = inputVar.to(device)  # B,S,C,H,W
+            label = targetVar.to(device).squeeze()  # B,S,C,H,W
             pred = net(inputs)[:, -1, :, :].squeeze()  # B,S,C,H,W
             # if i == 0:
             #     tb.add_graph(net, inputs)
             loss = lossfunction(pred, label)
             loss_aver = loss.item()
             test_losses.append(loss_aver)
-            label = label.numpy()
-            pred = pred.numpy()
+            label = label.to(torch.device("cpu")).numpy()
+            pred = pred.to(torch.device("cpu")).numpy()
             label_list = np.dstack((label_list, label))
             pred_list = np.dstack((pred_list, pred))
             t.set_postfix({
@@ -177,7 +176,7 @@ def eval():
     tb.flush()
     tb.close()
     res = [pred_list[:, :, 1:], label_list[:, :, 1:]]
-    np.save('eval_result_1000_low', res)
+    np.save('eval_result_low_24to24', res)
 
 
 def eval_plot():
@@ -186,7 +185,7 @@ def eval_plot():
     plot the loss curve
     :return:
     '''
-    result = np.load('eval_result_1000_low.npy', allow_pickle=True)
+    result = np.load('eval_result_low_24to24.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
     aqms_data = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')
@@ -198,20 +197,20 @@ def eval_plot():
     weight = weight.reshape([-1, 14])
     cor_list = []
     mse_before, mse_after, mse_before_n, mse_after_n = [], [], [], []
-    for i in range(1000):
+    for i in range(100):
         aqms = aqms_data[:, :, i + 24 + 23]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
-        mse_b = cal_mse(pred, label)
-        pred = aqms_correction(pred, weight, i)
-        mse_a = cal_mse(pred, label)
-        mse_before.append(mse_b)
-        mse_after.append(mse_a)
-        mse_b_n = cal_mse(pred, label)
-        pred = negetive_correction(pred)
-        mse_a_n = cal_mse(pred, label)
-        mse_before_n.append(mse_b_n)
-        mse_after_n.append(mse_a_n)
+        # mse_b = cal_mse(pred, label)
+        # pred = aqms_correction(pred, weight, i)
+        # mse_a = cal_mse(pred, label)
+        # mse_before.append(mse_b)
+        # mse_after.append(mse_a)
+        # mse_b_n = cal_mse(pred, label)
+        # pred = negetive_correction(pred)
+        # mse_a_n = cal_mse(pred, label)
+        # mse_before_n.append(mse_b_n)
+        # mse_after_n.append(mse_a_n)
         cor = cal_cor(pred, label)
         cor_list.append(cor)
         plot(pred, label, lon, lat, i, 'save')
@@ -232,21 +231,21 @@ def eval_ts():
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station = [], [], []
     station = [81, 162]
-    for i in range(1000):
+    for i in range(100):
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
         # aqms = aqms_data[:, :, i + 24 + 23]
         # pred, label = diff2adms(pred, label, aqms)
         # pred = mean_corection(pred, label)
-        pred = aqms_correction(pred, weight, i)
-        pred = negetive_correction(pred)
+        # pred = aqms_correction(pred, weight, i)
+        # pred = negetive_correction(pred)
         pred_station.append(pred[station[0]//2, station[1]//2])
         label_station.append(label[station[0]//2, station[1]//2])
-    print(np.corrcoef(pred_station[72:], label_station[:-72]))
+    print(np.corrcoef(pred_station[:], label_station[:]))
 
     plt.figure()
-    x = np.arange(928)
-    plt.plot(x, pred_station[72:], 'b', x, label_station[:-72], 'r')
+    x = np.arange(100)
+    plt.plot(x, pred_station[:], 'b', x, label_station[:], 'r')
     plt.show()
 
 
