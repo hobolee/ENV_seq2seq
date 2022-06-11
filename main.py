@@ -17,7 +17,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2022-06-10T00-00-00_48to48"
+TIMESTAMP = "2022-06-11T00-00-00_72to1"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',

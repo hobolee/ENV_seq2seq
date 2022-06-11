@@ -26,7 +26,7 @@ import matplotlib
 def aqms_correction(pred, weight, i):
     stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
                 [105, 169], [171, 171], [182, 270], [128, 146], [83, 60], [168, 100]]
-    aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[i + 24 + 23, :]
+    aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[i + 72 + 23, :]
     diff = []
     for j in range(14):
         diff.append(pred[stations[j][0] // 2, stations[j][1] // 2] - aqms_station[j] * 1.88)
@@ -59,7 +59,7 @@ def plot(pred, label, lon, lat, i):
     cax = plt.axes([0.92, 0.1, 0.025, 0.8])
     cbar2 = fig.colorbar(cf1, ax=[ax1, ax2], shrink=1, cax=cax)
     # plt.show()
-    plt.savefig('figs_24to24/a%s' % i)
+    plt.savefig('figs_diff_72to1/a%s' % i)
     plt.close(fig)
 
 
@@ -83,7 +83,7 @@ def eval():
         eval the model
         :return: save the pred_list, label_list, train_loss, valid_loss
         '''
-    TIMESTAMP = "2022-06-10T00-00-00_24to24"
+    TIMESTAMP = "2022-06-11T00-00-00_72to1"
     save_dir = './save_model/' + TIMESTAMP
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size',
@@ -147,6 +147,8 @@ def eval():
             pred1 = pred.to(torch.device("cpu")).numpy()
             label_list = np.dstack((label_list, label1))
             pred_list = np.dstack((pred_list, pred1))
+            if i == 1:
+                a = 1
             t.set_postfix({
                 'testloss': '{:.6f}'.format(loss_aver)
             })
@@ -178,10 +180,10 @@ def eval_plot():
     weight = weight.reshape([-1, 14])
     cor_list = []
     for i in range(1000):
-        aqms = aqms_data[:, :, i + 24 + 23][::2, ::2]
+        aqms = aqms_data[:, :, i + 72 + 23][::2, ::2]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
-        pred, label = diff2adms(pred, label, aqms)
+        # pred, label = diff2adms(pred, label, aqms)
         # pred = aqms_correction(pred, weight, i)
         # print(cal_mse())
         cor = cal_cor(pred, label)
@@ -199,9 +201,9 @@ def eval_ts():
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station = [], [], []
-    station = [78, 182]
+    station = [60, 120]
     for i in range(1000):
-        aqms = aqms_data[:, :, i + 24 + 23][::2, ::2]
+        aqms = aqms_data[:, :, i + 72 + 23][::2, ::2]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
         # pred, label = diff2adms(pred, label, aqms)
