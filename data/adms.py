@@ -24,7 +24,7 @@ class ADMS(data.Dataset):
         self.aqms = self.aqms.view(-1, 1, 240, 304)
         self.aqms = self.aqms[:, :, ::2, ::2]
         self.adms = self.adms[:, :, ::2, ::2]
-        self.length = len(self.adms) - 24 - 24
+        self.length = len(self.adms) - 72 - 24
         self.example_indices = list(range(self.length))
 
         # keep the same shuffle result, train:valid:test = 8:1:1
@@ -47,11 +47,11 @@ class ADMS(data.Dataset):
         self.image_size_ = [240, 304]
 
     def __getitem__(self, idx):
-        idx2 = self.example_indices[idx] + 24
+        idx2 = self.example_indices[idx] + 72
         # print(idx2)
-        input = self.adms[idx2-24:idx2, ...]
+        input = self.adms[idx2-72:idx2, ...]
         output = self.adms[idx2+23, ...]
-        input_decoder = self.aqms[idx2-24:idx2, ...]
+        input_decoder = self.aqms[idx2-72:idx2, ...]
         # input_decoder = None
         out = [idx, output, input, input_decoder]
         return out
