@@ -152,7 +152,7 @@ def eval():
         net.eval()
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
         for i, (idx, targetVar, inputVar) in enumerate(t):
-            if i == 100:
+            if i == 1000:
                 break
             inputs = inputVar.to(device)  # B,S,C,H,W
             label = targetVar.to(device).squeeze()  # B,S,C,H,W
@@ -197,7 +197,7 @@ def eval_plot():
     weight = weight.reshape([-1, 14])
     cor_list = []
     mse_before, mse_after, mse_before_n, mse_after_n, mse_before_m, mse_after_m = [], [], [], [], [], []
-    for i in range(100):
+    for i in range(1000):
         aqms = aqms_data[::2, ::2, i + 48 + 23]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
@@ -236,20 +236,20 @@ def eval_ts():
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station = [], [], []
     station = [0, 0]
-    for i in range(100):
-        pred = pred_list[:, :, i]
+    for i in range(1000):
+        pred = pred_list[:, :, i]*3
         label = label_list[:, :, i]
         aqms = aqms_data[::2, ::2, i + 48 + 23]
         # pred, label = diff2adms(pred, label, aqms)
         pred = mean_corection(pred, aqms)
         pred = aqms_correction(pred, weight, i)
-        # pred = negetive_correction(pred)
+        pred = negetive_correction(pred)
         pred_station.append(pred[station[0]//2, station[1]//2])
         label_station.append(label[station[0]//2, station[1]//2])
     print(np.corrcoef(pred_station[:], label_station[:]))
 
     plt.figure()
-    x = np.arange(100)
+    x = np.arange(1000)
     plt.plot(x, pred_station[:], 'b', x, label_station[:], 'r')
     plt.show()
 
