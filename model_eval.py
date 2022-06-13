@@ -41,26 +41,50 @@ def cal_cor(pred, label):
     return np.corrcoef(pred_vec, label_vec)[0][1]
 
 
-def plot(pred, label, lon, lat, i):
+def cal_IOA(pred, label):
+    pred = np.array(pred)
+    label = np.array(label)
+    label_mean = np.mean(label)
+    numerator = sum((pred - label) ** 2)
+    denominator = sum((abs(pred - label_mean) + abs(label - label_mean)) ** 2)
+    return 1 - numerator / denominator
+
+
+def plot(pred, label, lon, lat, i, mode):
     fig = plt.figure(figsize=(16, 6))
-    # norm = matplotlib.colors.Normalize(vmin=0, vmax=150)
+    # norm = matplotlib.colors.Normalize(vmin=0, vmax=100)
     ax1 = plt.axes([0.03, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
-    cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree())
+    pred[pred > 150] = 150
+    label[label > 150] = 150
+    cf1 = plt.contourf(lon, lat, pred, transform=ccrs.PlateCarree(), levels=range(151))
     ax1.coastlines()
     ax1.set_title('prediction')
     ax1.set_xlabel('lon')
     ax1.set_ylabel('lat')
     ax2 = plt.axes([0.46, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
-    cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree())
+    cf2 = plt.contourf(lon, lat, label, transform=ccrs.PlateCarree(), levels=range(151))
     ax2.set_xlabel('lon')
     ax2.set_title('label')
     ax2.coastlines()
     # plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
     cax = plt.axes([0.92, 0.1, 0.025, 0.8])
-    cbar2 = fig.colorbar(cf1, ax=[ax1, ax2], shrink=1, cax=cax)
-    # plt.show()
-    plt.savefig('figs_diff_72to1/a%s' % i)
+    cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax, ticks=[0, 30, 60, 90, 120, 150])
+    cbar.ax.tick_params(labelsize=12)
+    cbar.set_label('No2(ppb)')
+    # cbar.set_ticks([0, 20, 40, 60, 80, 100])
+    cbar.set_ticklabels(['0', '30', '60', '90', '120', '>150'])
+    if mode == 'show':
+        plt.show()
+    elif mode == 'save':
+        plt.savefig('figs_diff_72to1/a%s' % i)
     plt.close(fig)
+
+
+def negetive_correction(pred):
+    # if pred.min() < 0:
+    #     pred -= pred.min()
+    pred[pred < 0] = 0.1
+    return pred
 
 
 def mean_corection(pred, label):
@@ -154,8 +178,6 @@ def eval():
             pred1 = pred.to(torch.device("cpu")).numpy()
             label_list = np.dstack((label_list, label1))
             pred_list = np.dstack((pred_list, pred1))
-            if i == 1:
-                a = 1
             t.set_postfix({
                 'testloss': '{:.6f}'.format(loss_aver)
             })
@@ -166,7 +188,7 @@ def eval():
     tb.flush()
     tb.close()
     res = [pred_list[:, :, 1:], label_list[:, :, 1:]]
-    np.save('eval_result_1000_input_decoder', res)
+    np.save('eval_result_diff_72to1', res)
 
 
 def eval_plot():
@@ -175,7 +197,7 @@ def eval_plot():
     plot the loss curve
     :return:
     '''
-    result = np.load('eval_result_1000_input_decoder.npy', allow_pickle=True)
+    result = np.load('eval_result_diff_72to1.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
     aqms_data = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')
@@ -189,32 +211,42 @@ def eval_plot():
     mse_before, mse_after, mse_before_n, mse_after_n, mse_before_m, mse_after_m = [], [], [], [], [], []
     for i in range(1000):
         aqms = aqms_data[::2, ::2, i + 72 + 23]
-        pred = pred_list[:, :, i]*3
+        pred = pred_list[:, :, i] * 2
         label = label_list[:, :, i]
+
         pred, label = diff2adms(pred, label, aqms)
-        mse_b_m = cal_mse(pred, aqms)
-        pred = mean_corection(pred, aqms)
-        mse_a_m = cal_mse(pred, label)
-        mse_before_m.append(mse_b_m)
-        mse_after_m.append(mse_a_m)
+
+        # mse_b_m = cal_mse(pred, aqms)
+        # pred = mean_corection(pred, aqms)
+        # mse_a_m = cal_mse(pred, label)
+        # mse_before_m.append(mse_b_m)
+        # mse_after_m.append(mse_a_m)
+
         mse_b = cal_mse(pred, label)
         pred = aqms_correction(pred, weight, i)
         mse_a = cal_mse(pred, label)
         mse_before.append(mse_b)
         mse_after.append(mse_a)
-        # mse_b_n = cal_mse(pred, label)
-        # pred = negetive_correction(pred)
-        # mse_a_n = cal_mse(pred, label)
-        # mse_before_n.append(mse_b_n)
-        # mse_after_n.append(mse_a_n)
+        mse_b_n = cal_mse(pred, label)
+        pred = negetive_correction(pred)
+        mse_a_n = cal_mse(pred, label)
+        mse_before_n.append(mse_b_n)
+        mse_after_n.append(mse_a_n)
         cor = cal_cor(pred, label)
         cor_list.append(cor)
-        plot(pred, label, lon, lat, i)
+
+        plot(pred, label, lon, lat, i, 'save')
     print(np.mean(cor_list))
+    # print('mse_before_m', np.mean(mse_before_m))
+    # print('mse_after_m', np.mean(mse_after_m))
+    print('mse_before', np.mean(mse_before))
+    print('mse_after', np.mean(mse_after))
+    print('mse_before_n', np.mean(mse_before_n))
+    print('mse_after_n', np.mean(mse_after_n))
 
 
 def eval_ts():
-    result = np.load('eval_result_1000_input_decoder.npy', allow_pickle=True)
+    result = np.load('eval_result_diff_72to1.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
     aqms_data = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')
@@ -222,22 +254,25 @@ def eval_ts():
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station = [], [], []
-    station = [60, 120]
+    # station = [78, 182]
+    station = [83, 60]
     for i in range(1000):
         aqms = aqms_data[::2, ::2, i + 72 + 23]
-        pred = pred_list[:, :, i]*3
+        pred = pred_list[:, :, i]
         label = label_list[:, :, i]
         pred, label = diff2adms(pred, label, aqms)
-        pred = mean_corection(pred, aqms)
-        pred = aqms_correction(pred, weight, i)
+        # pred = mean_corection(pred, aqms)
+        # pred = negetive_correction(pred)
+        # pred = aqms_correction(pred, weight, i)
         pred_station.append(pred[station[0]//2, station[1]//2])
         label_station.append(label[station[0]//2, station[1]//2])
     lag = 0
     if lag:
         print(np.corrcoef(pred_station[lag:], label_station[:-lag]))
+        print(cal_IOA(pred_station[lag:], label_station[:-lag]))
     else:
         print(np.corrcoef(pred_station, label_station))
-
+        print(cal_IOA(pred_station, label_station))
     plt.figure()
     x = np.arange(1000 - lag)
     if lag:
