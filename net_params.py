@@ -66,6 +66,6 @@ convgru_decoder_params = [
         CGRU_cell(shape=(15, 19), input_channels=128, filter_size=5, num_features=128),
         CGRU_cell(shape=(30, 38), input_channels=128, filter_size=5, num_features=128),
         CGRU_cell(shape=(60, 76), input_channels=128, filter_size=5, num_features=128),
-        CGRU_cell(shape=(120, 152), input_channels=128, filter_size=5, num_features=64),
+        CGRU_cell(shape=(120, 152), input_channels=128, filter_size=5, num_features=96),
     ]
 ]
