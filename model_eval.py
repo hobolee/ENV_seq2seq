@@ -104,7 +104,7 @@ def eval():
         eval the model
         :return: save the pred_list, label_list, train_loss, valid_loss
         '''
-    TIMESTAMP = "2022-06-11T00-00-00_48to1"
+    TIMESTAMP = "2022-06-13T00-00-00_diffwithlag_72to1"
     save_dir = './save_model/' + TIMESTAMP
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size',
@@ -255,7 +255,7 @@ def eval_ts():
 
 
 if __name__ == "__main__":
-    # eval()
+    eval()
     # eval_plot()
     eval_ts()
     # eval_adms_station()
