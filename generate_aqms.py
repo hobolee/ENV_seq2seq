@@ -61,11 +61,13 @@ weight = weight.reshape([-1, 14])
 # aqms5 = torch.load('aqms_after_IDW5.pt').float()
 # aqms = torch.cat((aqms1, aqms2, aqms3, aqms4, aqms5), 2)
 # torch.save(aqms, 'aqms_after_IDW_float.pt')
-aqms = torch.load('aqms_after_IDW.pt')
-adms = torch.load('/Users/lihaobo/PycharmProjects/ENV/NO2/data_adms.pt').view(-1, 240, 305)[:, :, :304].float()
+aqms = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')
+adms = torch.load('/Users/lihaobo/PycharmProjects/data_no2/data_adms.pt').view(-1, 240, 305)[:, :, :304].float()
 adms = adms.permute(1, 2, 0)
-diff = adms - aqms * 1.88
-torch.save(diff, 'diff.pt')
+# diff = adms - aqms * 1.88
+# torch.save(diff, 'diff.pt')
+diff = adms[:, :, 24:] - aqms[:, :, :-24] * 1.88
+torch.save(diff, '/Users/lihaobo/PycharmProjects/data_no2/diff_with_lag.pt')
 fig = plt.figure()
 ax = plt.axes(projection=ccrs.PlateCarree())
 cf = plt.contourf(lon, lat, aqms[:, :, 10], 60, transform=ccrs.PlateCarree())
