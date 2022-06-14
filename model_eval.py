@@ -57,22 +57,24 @@ def plot(pred, label, lon, lat, i, mode):
     pred[pred > 150] = 150
     label[label > 150] = 150
     cf1 = plt.contourf(lon, lat, pred, transform=ccrs.PlateCarree(), levels=range(151))
+    # cf1 = plt.contourf(lon, lat, pred, transform=ccrs.PlateCarree())
     ax1.coastlines()
     ax1.set_title('prediction')
     ax1.set_xlabel('lon')
     ax1.set_ylabel('lat')
     ax2 = plt.axes([0.46, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
     cf2 = plt.contourf(lon, lat, label, transform=ccrs.PlateCarree(), levels=range(151))
+    # cf2 = plt.contourf(lon, lat, label, transform=ccrs.PlateCarree())
     ax2.set_xlabel('lon')
     ax2.set_title('label')
     ax2.coastlines()
     # plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
     cax = plt.axes([0.92, 0.1, 0.025, 0.8])
     cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax, ticks=[0, 30, 60, 90, 120, 150])
+    cbar.set_ticklabels(['0', '30', '60', '90', '120', '>150'])
+    # cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax)
     cbar.ax.tick_params(labelsize=12)
     cbar.set_label('No2(ppb)')
-    # cbar.set_ticks([0, 20, 40, 60, 80, 100])
-    cbar.set_ticklabels(['0', '30', '60', '90', '120', '>150'])
     if mode == 'show':
         plt.show()
     elif mode == 'save':
@@ -211,7 +213,7 @@ def eval_plot():
     mse_before, mse_after, mse_before_n, mse_after_n, mse_before_m, mse_after_m = [], [], [], [], [], []
     for i in range(1000):
         aqms = aqms_data[::2, ::2, i + 72 + 23]
-        pred = pred_list[:, :, i] * 2
+        pred = pred_list[:, :, i]*2
         label = label_list[:, :, i]
 
         pred, label = diff2adms(pred, label, aqms)
@@ -260,7 +262,7 @@ def eval_ts():
         aqms = aqms_data[::2, ::2, i + 72 + 23]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
-        pred, label = diff2adms(pred, label, aqms)
+        # pred, label = diff2adms(pred, label, aqms)
         # pred = mean_corection(pred, aqms)
         # pred = negetive_correction(pred)
         # pred = aqms_correction(pred, weight, i)
