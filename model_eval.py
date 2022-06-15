@@ -26,7 +26,7 @@ import matplotlib
 def aqms_correction(pred, weight, i):
     stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
                 [105, 169], [171, 171], [182, 270], [128, 146], [83, 60], [168, 100]]
-    aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[i + 48 + 23, :]
+    aqms_station = np.load('aqms_after_interpolation.npy', allow_pickle=True)[i + 72 + 23 - 24, :]
     diff = []
     for j in range(14):
         diff.append(pred[stations[j][0] // 2, stations[j][1] // 2] - aqms_station[j] * 1.88)
@@ -58,35 +58,38 @@ def plot(pred, label, lon, lat, i, mode):
     fig = plt.figure(figsize=(16, 6))
     # norm = matplotlib.colors.Normalize(vmin=0, vmax=100)
     ax1 = plt.axes([0.03, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
-    pred[pred > 150] = 150
-    label[label > 150] = 150
-    cf1 = plt.contourf(lon, lat, pred, transform=ccrs.PlateCarree(), levels=range(151))
+    # pred[pred > 150] = 150
+    # label[label > 150] = 150
+    # cf1 = plt.contourf(lon, lat, pred, transform=ccrs.PlateCarree(), levels=range(151))
+    cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree())
     ax1.coastlines()
     ax1.set_title('prediction')
     ax1.set_xlabel('lon')
     ax1.set_ylabel('lat')
     ax2 = plt.axes([0.46, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
-    cf2 = plt.contourf(lon, lat, label, transform=ccrs.PlateCarree(), levels=range(151))
+    # cf2 = plt.contourf(lon, lat, label, transform=ccrs.PlateCarree(), levels=range(151))
+    cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree())
     ax2.set_xlabel('lon')
     ax2.set_title('label')
     ax2.coastlines()
     # plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
     cax = plt.axes([0.92, 0.1, 0.025, 0.8])
-    cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax, ticks=[0, 30, 60, 90, 120, 150])
+    # cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax, ticks=[0, 30, 60, 90, 120, 150])
+    # cbar.set_ticklabels(['0', '30', '60', '90', '120', '>150'])
+    cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax)
     cbar.ax.tick_params(labelsize=12)
     cbar.set_label('No2(ppb)')
     # cbar.set_ticks([0, 20, 40, 60, 80, 100])
-    cbar.set_ticklabels(['0', '30', '60', '90', '120', '>150'])
     if mode == 'show':
         plt.show()
     elif mode == 'save':
-        plt.savefig('figs_low_48to1/a%s' % i)
+        plt.savefig('figs_diffwithlag_72to1/a%s' % i)
     plt.close(fig)
 
 
-def diff2adms(pred, label, aqms):
-    pred = pred + aqms * 1.88
-    label = label + aqms * 1.88
+def diff2adms(pred, label, aqms1, aqms2):
+    pred = pred + aqms1 * 1.88
+    label = label + aqms2 * 1.88
     return pred, label
 
 
@@ -152,7 +155,7 @@ def eval():
         net.eval()
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
         for i, (idx, targetVar, inputVar) in enumerate(t):
-            if i == 100:
+            if i == 1000:
                 break
             inputs = inputVar.to(device)  # B,S,C,H,W
             label = targetVar.to(device).squeeze()  # B,S,C,H,W
@@ -176,7 +179,7 @@ def eval():
     tb.flush()
     tb.close()
     res = [pred_list[:, :, 1:], label_list[:, :, 1:]]
-    np.save('eval_result_low_48to1', res)
+    np.save('eval_result_diffwithlag_72to1', res)
 
 
 def eval_plot():
@@ -185,7 +188,7 @@ def eval_plot():
     plot the loss curve
     :return:
     '''
-    result = np.load('eval_result_low_48to1.npy', allow_pickle=True)
+    result = np.load('eval_result_diffwithlag_72to1.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
     aqms_data = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')
@@ -197,20 +200,23 @@ def eval_plot():
     weight = weight.reshape([-1, 14])
     cor_list = []
     mse_before, mse_after, mse_before_n, mse_after_n, mse_before_m, mse_after_m = [], [], [], [], [], []
-    for i in range(1000):
-        aqms = aqms_data[::2, ::2, i + 48 + 23]
-        pred = pred_list[:, :, i]
+
+    for i in range(1000 - 24):
+        aqms1 = aqms_data[::2, ::2, i + 72 + 23 - 24]
+        aqms2 = aqms_data[::2, ::2, i + 72 + 23]
+        pred = pred_list[:, :, i+24]
         label = label_list[:, :, i]
-        mse_b_m = cal_mse(pred, aqms)
-        pred = mean_corection(pred, aqms)
-        mse_a_m = cal_mse(pred, label)
-        mse_before_m.append(mse_b_m)
-        mse_after_m.append(mse_a_m)
-        mse_b = cal_mse(pred, label)
-        pred = aqms_correction(pred, weight, i)
-        mse_a = cal_mse(pred, label)
-        mse_before.append(mse_b)
-        mse_after.append(mse_a)
+        # pred, label = diff2adms(pred, label, aqms1, aqms2)
+        # mse_b_m = cal_mse(pred, aqms)
+        # pred = mean_corection(pred, aqms)
+        # mse_a_m = cal_mse(pred, label)
+        # mse_before_m.append(mse_b_m)
+        # mse_after_m.append(mse_a_m)
+        # mse_b = cal_mse(pred, label)
+        # pred = aqms_correction(pred, weight, i)
+        # mse_a = cal_mse(pred, label)
+        # mse_before.append(mse_b)
+        # mse_after.append(mse_a)
         # mse_b_n = cal_mse(pred, label)
         # pred = negetive_correction(pred)
         # mse_a_n = cal_mse(pred, label)
@@ -220,14 +226,14 @@ def eval_plot():
         cor_list.append(cor)
         plot(pred, label, lon, lat, i, 'save')
     print(np.mean(cor_list))
-    print('before', np.mean(mse_before))
-    print('after', np.mean(mse_after))
-    print('before_n', np.mean(mse_before_n))
-    print('after_n', np.mean(mse_after_n))
+    # print('before', np.mean(mse_before))
+    # print('after', np.mean(mse_after))
+    # print('before_n', np.mean(mse_before_n))
+    # print('after_n', np.mean(mse_after_n))
 
 
 def eval_ts():
-    result = np.load('eval_result_low_48to1.npy', allow_pickle=True)
+    result = np.load('eval_result_diffwithlag_72to1.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
     aqms_data = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW.pt')
@@ -235,12 +241,13 @@ def eval_ts():
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station = [], [], []
-    station = [0, 0]
-    for i in range(100):
+    station = [47, 85]
+    for i in range(1000):
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
-        aqms = aqms_data[::2, ::2, i + 48 + 23]
-        # pred, label = diff2adms(pred, label, aqms)
+        aqms1 = aqms_data[::2, ::2, i + 72 + 23]
+        aqms2 = aqms_data[::2, ::2, i + 72 + 23 - 50]
+        pred, label = diff2adms(pred, label, aqms1, aqms1)
         # pred = mean_corection(pred, aqms)
         # pred = aqms_correction(pred, weight, i)
         # pred = negetive_correction(pred)
@@ -248,14 +255,21 @@ def eval_ts():
         label_station.append(label[station[0]//2, station[1]//2])
     print(np.corrcoef(pred_station[:], label_station[:]))
 
+    lag = 0
     plt.figure()
-    x = np.arange(100)
-    plt.plot(x, pred_station[:], 'b', x, label_station[:], 'r')
+    if lag:
+        x = np.arange(1000-lag)
+    else:
+        x = np.arange(1000)
+    if lag:
+        plt.plot(x, pred_station[lag:], 'b', x, label_station[:-lag], 'r')
+    else:
+        plt.plot(x, pred_station, 'b', x, label_station, 'r')
     plt.show()
 
 
 if __name__ == "__main__":
-    eval()
-    # eval_plot()
-    eval_ts()
+    # eval()
+    eval_plot()
+    # eval_ts()
     # eval_adms_station()
