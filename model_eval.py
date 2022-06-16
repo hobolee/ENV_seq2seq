@@ -107,6 +107,15 @@ def eval():
         eval the model
         :return: save the pred_list, label_list, train_loss, valid_loss
         '''
+    random_seed = 1996
+    np.random.seed(random_seed)
+    torch.manual_seed(random_seed)
+    if torch.cuda.device_count() > 1:
+        torch.cuda.manual_seed_all(random_seed)
+    else:
+        torch.cuda.manual_seed(random_seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
     TIMESTAMP = "2022-06-13T00-00-00_diffwithlag_72to1"
     save_dir = './save_model/' + TIMESTAMP
     parser = argparse.ArgumentParser()
@@ -135,7 +144,7 @@ def eval():
     encoder = Encoder(encoder_params[0], encoder_params[1])
     decoder = Decoder(decoder_params[0], decoder_params[1])
     net = ED(encoder, decoder)
-    device = torch.device("mps")
+    device = torch.device("cpu")
     if torch.cuda.device_count() > 1:
         net = nn.DataParallel(net)
     print('==> loading existing model')
@@ -144,7 +153,7 @@ def eval():
     optimizer = torch.optim.Adam(net.parameters())
     optimizer.load_state_dict(model_info['optimizer'])
     lossfunction = nn.MSELoss()
-    net.to(device)
+    # net.to(device)
 
     # to track the validation loss as the model trains
     test_losses = []
@@ -160,13 +169,14 @@ def eval():
             inputs = inputVar.to(device)  # B,S,C,H,W
             label = targetVar.to(device).squeeze()  # B,S,C,H,W
             pred = net(inputs)[:, -1, :, :].squeeze()  # B,S,C,H,W
-            # if i == 0:
+            if i == 0:
+                print(pred)
             #     tb.add_graph(net, inputs)
             loss = lossfunction(pred, label)
             loss_aver = loss.item()
             test_losses.append(loss_aver)
-            label = label.to(torch.device("cpu")).numpy()
-            pred = pred.to(torch.device("cpu")).numpy()
+            label = label.numpy()
+            pred = pred.numpy()
             label_list = np.dstack((label_list, label))
             pred_list = np.dstack((pred_list, pred))
             t.set_postfix({
@@ -201,10 +211,10 @@ def eval_plot():
     cor_list = []
     mse_before, mse_after, mse_before_n, mse_after_n, mse_before_m, mse_after_m = [], [], [], [], [], []
 
-    for i in range(1000 - 24):
+    for i in range(200):
         aqms1 = aqms_data[::2, ::2, i + 72 + 23 - 24]
         aqms2 = aqms_data[::2, ::2, i + 72 + 23]
-        pred = pred_list[:, :, i+24]
+        pred = pred_list[:, :, i]
         label = label_list[:, :, i]
         # pred, label = diff2adms(pred, label, aqms1, aqms2)
         # mse_b_m = cal_mse(pred, aqms)
@@ -245,9 +255,8 @@ def eval_ts():
     for i in range(1000):
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
-        aqms1 = aqms_data[::2, ::2, i + 72 + 23]
-        aqms2 = aqms_data[::2, ::2, i + 72 + 23 - 50]
-        pred, label = diff2adms(pred, label, aqms1, aqms1)
+        aqms = aqms_data[::2, ::2, i + 72 + 23]
+        pred, label = diff2adms(pred, label, aqms, aqms)
         # pred = mean_corection(pred, aqms)
         # pred = aqms_correction(pred, weight, i)
         # pred = negetive_correction(pred)
@@ -255,7 +264,7 @@ def eval_ts():
         label_station.append(label[station[0]//2, station[1]//2])
     print(np.corrcoef(pred_station[:], label_station[:]))
 
-    lag = 0
+    lag = 24
     plt.figure()
     if lag:
         x = np.arange(1000-lag)
@@ -270,6 +279,6 @@ def eval_ts():
 
 if __name__ == "__main__":
     # eval()
-    eval_plot()
-    # eval_ts()
+    # eval_plot()
+    eval_ts()
     # eval_adms_station()
