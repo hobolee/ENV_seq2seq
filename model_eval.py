@@ -166,8 +166,8 @@ def eval():
         for i, (idx, targetVar, inputVar) in enumerate(t):
             if i == 1000:
                 break
-            inputs = inputVar.to(device)  # B,S,C,H,W
-            label = targetVar.to(device).squeeze()  # B,S,C,H,W
+            inputs = inputVar  # B,S,C,H,W
+            label = targetVar.squeeze()  # B,S,C,H,W
             pred = net(inputs)[:, -1, :, :].squeeze()  # B,S,C,H,W
             if i == 0:
                 print(pred)
