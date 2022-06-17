@@ -194,7 +194,6 @@ def train():
             'state_dict': net.state_dict(),
             'optimizer': optimizer.state_dict()
         }
-        valid_loss -= 1
         early_stopping(valid_loss, model_dict, epoch, save_dir)
         if early_stopping.early_stop:
             print("Early stopping")

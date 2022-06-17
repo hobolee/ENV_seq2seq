@@ -35,6 +35,21 @@ def aqms_correction(pred, weight, i):
     return pred
 
 
+def cal_cor(pred, label):
+    pred_vec = pred.flatten()
+    label_vec = label.flatten()
+    return np.corrcoef(pred_vec, label_vec)[0][1]
+
+
+def cal_IOA(pred, label):
+    pred = np.array(pred)
+    label = np.array(label)
+    label_mean = np.mean(label)
+    numerator = sum((pred - label) ** 2)
+    denominator = sum((abs(pred - label_mean) + abs(label - label_mean)) ** 2)
+    return 1 - numerator / denominator
+
+
 def negetive_correction(pred):
     if pred.min() < 0:
         pred -= pred.min()
@@ -46,12 +61,6 @@ def mean_corection(pred, label):
     mean_label = np.mean(label)
     pred = pred - (mean_pred - mean_label)
     return pred
-
-
-def cal_cor(pred, label):
-    pred_vec = pred.flatten()
-    label_vec = label.flatten()
-    return np.corrcoef(pred_vec, label_vec)[0][1]
 
 
 def plot(pred, label, lon, lat, i, mode):
@@ -145,15 +154,13 @@ def eval():
     decoder = Decoder(decoder_params[0], decoder_params[1])
     net = ED(encoder, decoder)
     device = torch.device("cpu")
-    if torch.cuda.device_count() > 1:
-        net = nn.DataParallel(net)
     print('==> loading existing model')
     model_info = torch.load(os.path.join(save_dir, 'checkpoint.pth.tar'), map_location=torch.device('cpu'))
     net.load_state_dict(model_info['state_dict'])
     optimizer = torch.optim.Adam(net.parameters())
     optimizer.load_state_dict(model_info['optimizer'])
     lossfunction = nn.MSELoss()
-    # net.to(device)
+    net.to(device)
 
     # to track the validation loss as the model trains
     test_losses = []
@@ -164,10 +171,10 @@ def eval():
         net.eval()
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
         for i, (idx, targetVar, inputVar) in enumerate(t):
-            if i == 1000:
+            if i == 200:
                 break
-            inputs = inputVar  # B,S,C,H,W
-            label = targetVar.squeeze()  # B,S,C,H,W
+            inputs = inputVar.to(device)  # B,S,C,H,W
+            label = targetVar.squeeze().to(device)  # B,S,C,H,W
             pred = net(inputs)[:, -1, :, :].squeeze()  # B,S,C,H,W
             if i == 0:
                 print(pred)
@@ -212,7 +219,7 @@ def eval_plot():
     mse_before, mse_after, mse_before_n, mse_after_n, mse_before_m, mse_after_m = [], [], [], [], [], []
 
     for i in range(200):
-        aqms1 = aqms_data[::2, ::2, i + 72 + 23 - 24]
+        aqms1 = aqms_data[::2, ::2, i + 72 + 23]
         aqms2 = aqms_data[::2, ::2, i + 72 + 23]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
@@ -251,8 +258,8 @@ def eval_ts():
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station = [], [], []
-    station = [47, 85]
-    for i in range(1000):
+    station = [78, 182]
+    for i in range(200):
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
         aqms = aqms_data[::2, ::2, i + 72 + 23]
@@ -264,12 +271,12 @@ def eval_ts():
         label_station.append(label[station[0]//2, station[1]//2])
     print(np.corrcoef(pred_station[:], label_station[:]))
 
-    lag = 24
+    lag = 0
     plt.figure()
     if lag:
-        x = np.arange(1000-lag)
+        x = np.arange(200-lag)
     else:
-        x = np.arange(1000)
+        x = np.arange(200)
     if lag:
         plt.plot(x, pred_station[lag:], 'b', x, label_station[:-lag], 'r')
     else:
@@ -279,6 +286,6 @@ def eval_ts():
 
 if __name__ == "__main__":
     # eval()
-    # eval_plot()
-    eval_ts()
+    eval_plot()
+    # eval_ts()
     # eval_adms_station()
