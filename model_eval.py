@@ -78,7 +78,7 @@ def plot(pred, label, lon, lat, i, mode):
     if mode == 'show':
         plt.show()
     elif mode == 'save':
-        plt.savefig('figs_diff_72to1/a%s' % i)
+        plt.savefig('figs/figs_diff_72to10/a%s' % i)
     plt.close(fig)
 
 
@@ -226,7 +226,7 @@ def eval_plot():
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
 
-        # pred, label = diff2adms(pred, label, aqms)
+        pred, label = diff2adms(pred, label, aqms)
 
         # mse_b_m = cal_mse(pred, aqms)
         # pred = mean_corection(pred, aqms)
@@ -239,11 +239,11 @@ def eval_plot():
         # mse_a = cal_mse(pred, label)
         # mse_before.append(mse_b)
         # mse_after.append(mse_a)
-        # mse_b_n = cal_mse(pred, label)
-        # pred = negetive_correction(pred)
-        # mse_a_n = cal_mse(pred, label)
-        # mse_before_n.append(mse_b_n)
-        # mse_after_n.append(mse_a_n)
+        mse_b_n = cal_mse(pred, label)
+        pred = negetive_correction(pred)
+        mse_a_n = cal_mse(pred, label)
+        mse_before_n.append(mse_b_n)
+        mse_after_n.append(mse_a_n)
         ioa = cal_IOA(pred, label)
         ioa_list.append(ioa)
 
@@ -253,8 +253,8 @@ def eval_plot():
     # print('mse_after_m', np.mean(mse_after_m))
     # print('mse_before', np.mean(mse_before))
     # print('mse_after', np.mean(mse_after))
-    # print('mse_before_n', np.mean(mse_before_n))
-    # print('mse_after_n', np.mean(mse_after_n))
+    print('mse_before_n', np.mean(mse_before_n))
+    print('mse_after_n', np.mean(mse_after_n))
 
 
 def eval_ts():
@@ -266,13 +266,13 @@ def eval_ts():
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station = [], [], []
-    station = [150, 150]
-    # station = [78, 182]
+    # station = [150, 150]
+    station = [78, 182]
     for i in range(1000):
         aqms = aqms_data[::2, ::2, i + 72 + 23]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
-        pred, label = diff2adms(pred, label, aqms)
+        # pred, label = diff2adms(pred, label, aqms)
         # pred = mean_corection(pred, aqms)
         # pred = negetive_correction(pred)
         # pred = aqms_correction(pred, weight, i)
@@ -296,6 +296,6 @@ def eval_ts():
 
 if __name__ == "__main__":
     # eval()
-    eval_plot()
-    # eval_ts()
+    # eval_plot()
+    eval_ts()
     # eval_adms_station()
