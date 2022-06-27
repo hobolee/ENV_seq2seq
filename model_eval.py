@@ -92,7 +92,7 @@ def plot(pred, label, lon, lat, i, mode):
     if mode == 'show':
         plt.show()
     elif mode == 'save':
-        plt.savefig('figs_diffwithlag_72to1/a%s' % i)
+        plt.savefig('figs/figs_diffwithlag_72to1/a%s' % i)
     plt.close(fig)
 
 
@@ -258,20 +258,21 @@ def eval_ts():
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station = [], [], []
-    station = [78, 182]
+    station = [30, 30]
     for i in range(200):
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
         aqms = aqms_data[::2, ::2, i + 72 + 23]
-        pred, label = diff2adms(pred, label, aqms, aqms)
+        # pred, label = diff2adms(pred, label, aqms, aqms)
         # pred = mean_corection(pred, aqms)
         # pred = aqms_correction(pred, weight, i)
         # pred = negetive_correction(pred)
         pred_station.append(pred[station[0]//2, station[1]//2])
         label_station.append(label[station[0]//2, station[1]//2])
     print(np.corrcoef(pred_station[:], label_station[:]))
+    print(cal_IOA(pred, label))
 
-    lag = 0
+    lag = 24
     plt.figure()
     if lag:
         x = np.arange(200-lag)
@@ -286,6 +287,6 @@ def eval_ts():
 
 if __name__ == "__main__":
     # eval()
-    eval_plot()
-    # eval_ts()
+    # eval_plot()
+    eval_ts()
     # eval_adms_station()
