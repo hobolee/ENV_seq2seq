@@ -9,9 +9,10 @@ def load_adms(root):
     path = os.path.join(root, 'aqms_after_IDW.pt')
     aqms = torch.load(path).float()[:, :, :]
     aqms = aqms.permute(2, 0, 1)
-    path = os.path.join(root, 'diff.pt')
+    path = os.path.join(root, 'diff_after_norm.pt')
     adms = torch.load(path).float()
     adms = adms.permute(2, 0, 1)
+
     return adms, aqms
 
 
@@ -30,27 +31,29 @@ class ADMS(data.Dataset):
         # keep the same shuffle result, train:valid:test = 8:1:1
         r = random.random
         random.seed(2)
-        if mode != 'all':
-            random.shuffle(self.example_indices, random=r)
+        # if mode != 'all':
+        #     random.shuffle(self.example_indices, random=r)
         print(self.example_indices[:20])
         self.mode = mode
         if self.mode == 'train':
-            self.length = 8 * self.length // 10
+            self.length = 8 * (self.length // 10)
             self.example_indices = self.example_indices[:self.length]
         elif self.mode == 'valid':
             self.length = self.length // 10
             self.example_indices = self.example_indices[8*self.length:9*self.length]
         elif self.mode == 'test':
-            self.length = self.length - 9 * self.length // 10
+            self.length = self.length - 9 * (self.length // 10)
             self.example_indices = self.example_indices[-self.length:]
         self.is_train = is_train
         self.image_size_ = [240, 304]
+        print(self.example_indices[:20])
 
     def __getitem__(self, idx):
         idx2 = self.example_indices[idx] + 72
         # print(idx2)
         input = self.adms[idx2-72:idx2, ...]
-        output = self.adms[idx2+23, ...]
+        # output = self.adms[idx2-1:idx2+23, ...]
+        output = self.adms[idx2 + 23, ...]
         input_decoder = self.aqms[idx2-72:idx2, ...]
         # input_decoder = None
         out = [idx, output, input, input_decoder]

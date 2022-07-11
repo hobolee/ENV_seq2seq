@@ -28,14 +28,14 @@ class CGRU_cell(nn.Module):
         # seq_len=10 for moving_mnist
         if hidden_state is None:
             htprev = torch.zeros(inputs.size(1), self.num_features,
-                                 self.shape[0], self.shape[1]).to(torch.device("cpu"))
+                                 self.shape[0], self.shape[1]).to(torch.device("cuda:0"))
         else:
             htprev = hidden_state
         output_inner = []
         for index in range(seq_len):
             if inputs is None:
                 x = torch.zeros(htprev.size(0), self.input_channels,
-                                self.shape[0], self.shape[1]).to(torch.device("cpu"))
+                                self.shape[0], self.shape[1]).to(torch.device("cuda:0"))
             else:
                 x = inputs[index, ...]
 

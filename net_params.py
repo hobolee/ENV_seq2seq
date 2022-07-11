@@ -37,10 +37,10 @@ convlstm_decoder_params = [
 
 convgru_encoder_params = [
     [
-        OrderedDict({'conv1_leaky_1': [1, 16, 3, 1, 1]}),
-        OrderedDict({'conv2_leaky_1': [64, 64, 3, 2, 1]}),
-        OrderedDict({'conv3_leaky_1': [96, 96, 3, 2, 1]}),
-        OrderedDict({'conv4_leaky_1': [128, 128, 3, 2, 1]}),
+        OrderedDict({'conv1_relu_1': [1, 16, 3, 1, 1]}),
+        OrderedDict({'conv2_relu_1': [64, 64, 3, 2, 1]}),
+        OrderedDict({'conv3_relu_1': [96, 96, 3, 2, 1]}),
+        OrderedDict({'conv4_relu_1': [128, 128, 3, 2, 1]}),
     ],
 
     [
@@ -54,12 +54,12 @@ convgru_encoder_params = [
 
 convgru_decoder_params = [
     [
-        OrderedDict({'deconv1_leaky_1': [128, 128, 4, 2, 1]}),
-        OrderedDict({'deconv2_leaky_1': [128, 128, 4, 2, 1]}),
-        OrderedDict({'deconv3_leaky_1': [96, 96, 4, 2, 1]}),
+        OrderedDict({'deconv1_relu_1': [128, 128, 4, 2, 1]}),
+        OrderedDict({'deconv2_relu_1': [128, 128, 4, 2, 1]}),
+        OrderedDict({'deconv3_relu_1': [96, 96, 4, 2, 1]}),
         OrderedDict({
-            'conv4_leaky_1': [64, 32, 3, 1, 1],
-            'conv5_leaky_1': [32, 1, 1, 1, 0]
+            'conv4_relu_1': [64, 32, 3, 1, 1],
+            'conv5_relu_1': [32, 1, 1, 1, 0]
         }),
     ],
 

@@ -19,6 +19,7 @@ def make_layers(block):
                 layers.append(('relu_' + layer_name, nn.ReLU(inplace=True)))
             elif 'leaky' in layer_name:
                 layers.append(('leaky_' + layer_name,
+                               # nn.Tanh()))
                                nn.LeakyReLU(negative_slope=0.2, inplace=True)))
         elif 'conv' in layer_name:
             conv2d = nn.Conv2d(in_channels=v[0],
@@ -31,6 +32,7 @@ def make_layers(block):
                 layers.append(('relu_' + layer_name, nn.ReLU(inplace=True)))
             elif 'leaky' in layer_name:
                 layers.append(('leaky_' + layer_name,
+                               # nn.Tanh()))
                                nn.LeakyReLU(negative_slope=0.2, inplace=True)))
         else:
             raise NotImplementedError
