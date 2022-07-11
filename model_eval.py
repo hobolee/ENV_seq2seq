@@ -56,23 +56,23 @@ def plot(pred, label, lon, lat, i, mode):
     ax1 = plt.axes([0.03, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
     pred[pred > 150] = 150
     label[label > 150] = 150
-    cf1 = plt.contourf(lon, lat, pred, transform=ccrs.PlateCarree(), levels=range(151))
-    # cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree())
+    # cf1 = plt.contourf(lon, lat, pred, transform=ccrs.PlateCarree(), levels=range(151))
+    cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree())
     ax1.coastlines()
     ax1.set_title('prediction')
     ax1.set_xlabel('lon')
     ax1.set_ylabel('lat')
     ax2 = plt.axes([0.46, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
-    cf2 = plt.contourf(lon, lat, label, transform=ccrs.PlateCarree(), levels=range(151))
-    # cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree())
+    # cf2 = plt.contourf(lon, lat, label, transform=ccrs.PlateCarree(), levels=range(151))
+    cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree())
     ax2.set_xlabel('lon')
     ax2.set_title('label')
     ax2.coastlines()
     # plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
     cax = plt.axes([0.92, 0.1, 0.025, 0.8])
-    cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax, ticks=[0, 30, 60, 90, 120, 150])
-    cbar.set_ticklabels(['0', '30', '60', '90', '120', '>150'])
-    # cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax)
+    # cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax, ticks=[0, 30, 60, 90, 120, 150])
+    # cbar.set_ticklabels(['0', '30', '60', '90', '120', '>150'])
+    cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax)
     cbar.ax.tick_params(labelsize=12)
     cbar.set_label('No2(ppb)')
     if mode == 'show':
@@ -226,7 +226,7 @@ def eval_plot():
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
 
-        pred, label = diff2adms(pred, label, aqms)
+        # pred, label = diff2adms(pred, label, aqms)
 
         # mse_b_m = cal_mse(pred, aqms)
         # pred = mean_corection(pred, aqms)
@@ -266,13 +266,13 @@ def eval_ts():
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station = [], [], []
-    # station = [150, 150]
-    station = [78, 182]
+    station = [150, 150]
+    # station = [78, 182]
     for i in range(1000):
         aqms = aqms_data[::2, ::2, i + 72 + 23]
         pred = pred_list[:, :, i]
         label = label_list[:, :, i]
-        # pred, label = diff2adms(pred, label, aqms)
+        pred, label = diff2adms(pred, label, aqms)
         # pred = mean_corection(pred, aqms)
         # pred = negetive_correction(pred)
         # pred = aqms_correction(pred, weight, i)
@@ -296,6 +296,6 @@ def eval_ts():
 
 if __name__ == "__main__":
     # eval()
-    # eval_plot()
-    eval_ts()
+    eval_plot()
+    # eval_ts()
     # eval_adms_station()
