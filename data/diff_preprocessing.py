@@ -7,6 +7,7 @@ import torch
 stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
             [105, 169], [171, 171], [182, 270], [128, 146], [83, 60], [168, 100]]
 weight = np.load('../weight.npy')
+weight = np.float32(weight)
 weight = weight.reshape([-1, 14])
 
 # data_2019_01 = torch.load('/Users/lihaobo/PycharmProjects/data_no2/diff.pt')[:, :, 96+14]
@@ -36,19 +37,16 @@ weight = weight.reshape([-1, 14])
 # cbar = fig.colorbar(cf, ax=ax, shrink=1)
 
 
-# diff = torch.load('/Users/lihaobo/PycharmProjects/data_no2/diff.pt')
-# diff_station = diff[78, 182, 13000:].view([-1, 1])
-# for i in range(1, 14):
-#     x, y = stations[i]
-#     tmp = diff[x, y, 13000:].view([-1, 1])
-#     diff_station = torch.cat((diff_station, tmp), 1)
-# diff_station = diff_station.transpose(1, 0)
-#
-# distribution = np.dot(weight, diff_station)
-# distribution = distribution.reshape([240, 304, -1])
-# torch.save(torch.from_numpy(distribution), 'diff_after_cor2.pt')
+diff = torch.load('/Users/lihaobo/PycharmProjects/data_no2/diff.pt')
+diff_station = diff[78, 182, :].view([-1, 1])
+for i in range(1, 14):
+    x, y = stations[i]
+    tmp = diff[x, y, :].view([-1, 1])
+    diff_station = torch.cat((diff_station, tmp), 1)
+diff_station = diff_station.transpose(1, 0)
 
-d1 = torch.load('diff_after_cor1.pt')
-d2 = torch.load('diff_after_cor2.pt')
-d = torch.cat((d1, d2), 2)
-torch.save(d, 'diff_after_cor.pt')
+distribution = np.dot(weight, diff_station)
+distribution = distribution.reshape([240, 304, -1])
+torch.save(torch.from_numpy(distribution), 'diff_after_cor.pt')
+
+
