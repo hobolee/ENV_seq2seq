@@ -18,24 +18,24 @@ class CGRU_cell(nn.Module):
             nn.Conv2d(self.input_channels + self.num_features,
                       2 * self.num_features, self.filter_size, 1,
                       self.padding),
-            nn.GroupNorm(2 * self.num_features // 32, 2 * self.num_features))
+            nn.GroupNorm(2 * self.num_features // 16, 2 * self.num_features))
         self.conv2 = nn.Sequential(
             nn.Conv2d(self.input_channels + self.num_features,
                       self.num_features, self.filter_size, 1, self.padding),
-            nn.GroupNorm(self.num_features // 32, self.num_features))
+            nn.GroupNorm(self.num_features // 16, self.num_features))
 
     def forward(self, inputs=None, hidden_state=None, seq_len=24):
         # seq_len=10 for moving_mnist
         if hidden_state is None:
             htprev = torch.zeros(inputs.size(1), self.num_features,
-                                 self.shape[0], self.shape[1]).to(torch.device("cpu"))
+                                 self.shape[0], self.shape[1]).to(torch.device("cuda:0"))
         else:
             htprev = hidden_state
         output_inner = []
         for index in range(seq_len):
             if inputs is None:
                 x = torch.zeros(htprev.size(0), self.input_channels,
-                                self.shape[0], self.shape[1]).to(torch.device("cpu"))
+                                self.shape[0], self.shape[1]).to(torch.device("cuda:0"))
             else:
                 x = inputs[index, ...]
 

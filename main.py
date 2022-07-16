@@ -1,6 +1,6 @@
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 from encoder import Encoder
 from decoder import Decoder
 from model import ED
@@ -17,7 +17,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2022-06-11T00-00-00_72to1"
+TIMESTAMP = "2022-07-11T00-00-00_diff_after_cor_12"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -57,10 +57,10 @@ torch.backends.cudnn.benchmark = False
 save_dir = './save_model/' + TIMESTAMP
 
 trainFolder = ADMS(is_train=True,
-                   root='/Users/lihaobo/PycharmProjects/data_no2/',
+                   root=r'C:\Users\lihaobo\Downloads\data\data_no2',
                    mode='train')
 validFolder = ADMS(is_train=False,
-                   root='/Users/lihaobo/PycharmProjects/data_no2/',
+                   root=r'C:\Users\lihaobo\Downloads\data\data_no2',
                    mode='valid')
 trainLoader = torch.utils.data.DataLoader(trainFolder,
                                           batch_size=args.batch_size,
@@ -101,7 +101,7 @@ def train():
     if os.path.exists(os.path.join(save_dir, 'checkpoint.pth.tar')):
         # load existing model
         print('==> loading existing model')
-        model_info = torch.load(os.path.join(save_dir, 'checkpoint.pth.tar'), map_location=torch.device('cpu'))
+        model_info = torch.load(os.path.join(save_dir, 'checkpoint.pth.tar')) #, map_location=torch.device('cuda:0'))
         net.load_state_dict(model_info['state_dict'])
         optimizer = torch.optim.Adam(net.parameters())
         optimizer.load_state_dict(model_info['optimizer'])
@@ -140,7 +140,7 @@ def train():
             input_decoder = None
             optimizer.zero_grad()
             net.train()
-            pred = net(inputs, input_decoder)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
+            pred = net(inputs, input_decoder)[:, :, :, :, :].squeeze()  # B,S,C,H,W
             loss = lossfunction(pred, label)
             loss_aver = loss.item()
             train_losses.append(loss_aver)
@@ -164,7 +164,7 @@ def train():
                 # input_decoder = input_decoder.to(device)
                 # input_decoder = inputs.squeeze(dim=2)
                 input_decoder = None
-                pred = net(inputs, input_decoder)[:, -1, :, :].squeeze()
+                pred = net(inputs, input_decoder)[:, :, :, :, :].squeeze()
                 loss = lossfunction(pred, label)
                 loss_aver = loss.item()
                 # record validation loss

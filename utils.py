@@ -32,6 +32,8 @@ def make_layers(block):
             elif 'leaky' in layer_name:
                 layers.append(('leaky_' + layer_name,
                                nn.LeakyReLU(negative_slope=0.2, inplace=True)))
+            elif 'tanh' in layer_name:
+                layers.append(('tanh_' + layer_name, nn.Tanh()))
         else:
             raise NotImplementedError
     return nn.Sequential(OrderedDict(layers))
