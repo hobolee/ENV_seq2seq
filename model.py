@@ -24,12 +24,18 @@ class activation():
 
 class ED(nn.Module):
 
-    def __init__(self, encoder, decoder):
+    def __init__(self, encoder1, encoder2, decoder1, decoder2):
         super().__init__()
-        self.encoder = encoder
-        self.decoder = decoder
+        self.encoder1 = encoder1
+        self.encoder2 = encoder2
+        self.decoder1 = decoder1
+        self.decoder2 = decoder2
 
     def forward(self, input, input_decoder):
-        state = self.encoder(input)
+        input_low = input[:, :, ::2, ::2]
+        state1 = self.encoder1(input_low)
+        state2 = self.encoder2(input)
+        output_low = self.decoder1(state1, input_decoder)
+        state = torch.concat((state2, output_low))
         output = self.decoder(state, input_decoder)
         return output

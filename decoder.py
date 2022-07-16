@@ -31,9 +31,10 @@ class Decoder(nn.Module):
             shape = hidden_states[-1].shape[-2:]
             input_decoder = torch.nn.functional.interpolate(input_decoder, size=shape)
             input_decoder = input_decoder.unsqueeze(0)
+        index = self.blocks
         inputs = self.forward_by_stage(input_decoder, hidden_states[-1],
-                                       getattr(self, 'stage4'),
-                                       getattr(self, 'rnn4'))
+                                       getattr(self, 'stage' + str(index)),
+                                       getattr(self, 'rnn' + str(index)))
         for i in list(range(1, self.blocks))[::-1]:
             inputs = self.forward_by_stage(inputs, hidden_states[i - 1],
                                            getattr(self, 'stage' + str(i)),
