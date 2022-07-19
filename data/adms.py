@@ -9,8 +9,8 @@ def load_adms(root):
     path = os.path.join(root, 'aqms_after_IDW.pt')
     aqms = torch.load(path).float()[:, :, :]
     aqms = aqms.permute(2, 0, 1)
-    path = os.path.join(root, 'diff_after_norm.pt')
-    adms = torch.load(path).float()
+    path = os.path.join(root, 'diff_after_cor_12.pt')
+    adms = torch.load(path).float()[:, :, :2000]
     adms = adms.permute(2, 0, 1)
 
     return adms, aqms
@@ -23,8 +23,8 @@ class ADMS(data.Dataset):
         # self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
         self.adms = self.adms.view(-1, 1, 240, 304)
         self.aqms = self.aqms.view(-1, 1, 240, 304)
-        self.aqms = self.aqms[:, :, ::2, ::2]
-        self.adms = self.adms[:, :, ::2, ::2]
+        # self.aqms = self.aqms[:, :, ::2, ::2]
+        # self.adms = self.adms[:, :, ::2, ::2]
         self.length = len(self.adms) - 72 - 24
         self.example_indices = list(range(self.length))
 

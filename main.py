@@ -4,7 +4,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 from encoder import Encoder
 from decoder import Decoder
 from model import ED
-from net_params import convlstm_encoder_params, convlstm_decoder_params, convgru_encoder_params, convgru_decoder_params
+from net_params import convgru_encoder_params2, convgru_decoder_params2, convgru_encoder_params1, convgru_decoder_params1
 from data.adms import ADMS
 import torch
 from torch import nn
@@ -17,7 +17,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2022-06-30T00-00-00_72to24_noshuffle_relu"
+TIMESTAMP = "2022-07-15T00-00-00_multi"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -69,24 +69,20 @@ validLoader = torch.utils.data.DataLoader(validFolder,
                                           batch_size=args.batch_size,
                                           shuffle=False)
 
-if args.convlstm:
-    encoder_params = convlstm_encoder_params
-    decoder_params = convlstm_decoder_params
-if args.convgru:
-    encoder_params = convgru_encoder_params
-    decoder_params = convgru_decoder_params
-else:
-    encoder_params = convgru_encoder_params
-    decoder_params = convgru_decoder_params
-
+encoder_params1 = convgru_encoder_params1
+decoder_params1 = convgru_decoder_params1
+encoder_params2 = convgru_encoder_params2
+decoder_params2 = convgru_decoder_params2
 
 def train():
     '''
     main function to run the training
     '''
-    encoder = Encoder(encoder_params[0], encoder_params[1])
-    decoder = Decoder(decoder_params[0], decoder_params[1])
-    net = ED(encoder, decoder)
+    encoder1 = Encoder(encoder_params1[0], encoder_params1[1])
+    decoder1 = Decoder(decoder_params1[0], decoder_params1[1])
+    encoder2 = Encoder(encoder_params2[0], encoder_params2[1])
+    decoder2 = Decoder(decoder_params2[0], decoder_params2[1])
+    net = ED(encoder1, encoder2, decoder1, decoder2)
     run_dir = './runs/' + TIMESTAMP
     if not os.path.isdir(run_dir):
         os.makedirs(run_dir)
@@ -166,8 +162,8 @@ def train():
                 # input_decoder = inputs.squeeze(dim=2)
                 input_decoder = None
                 # pred = net(inputs, input_decoder).squeeze()
-                pred = net(inputs, input_decoder)[:, -1, :, :].squeeze()
-                # loss = lossfunction(pred, label)
+                pred = net(inputs, input_decoder)[:, -1, :, :, :].squeeze()
+                loss = lossfunction(pred, label)
                 loss_aver = loss.item()
                 # record validation loss
                 valid_losses.append(loss_aver)

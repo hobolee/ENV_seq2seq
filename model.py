@@ -32,10 +32,12 @@ class ED(nn.Module):
         self.decoder2 = decoder2
 
     def forward(self, input, input_decoder):
-        input_low = input[:, :, ::2, ::2]
+        input_low = input[:, :, :, ::2, ::2]
         state1 = self.encoder1(input_low)
         state2 = self.encoder2(input)
         output_low = self.decoder1(state1, input_decoder)
-        state = torch.concat((state2, output_low))
-        output = self.decoder(state, input_decoder)
+        output_low = output_low[:, -1, :, :, :].squeeze()
+        state = list(state2)
+        state[1] = torch.concat((state[1], output_low), 1)
+        output = self.decoder2(state, input_decoder)
         return output
