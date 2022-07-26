@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pandas as pd
 from lib import DataInterpolate
@@ -18,54 +20,38 @@ DI.generate_dataset(48, [2019, 2021])
 aqms = np.load('aqms_after_interpolation.npy', allow_pickle=True)
 
 
-lng_lat = np.load('/Users/lihaobo/PycharmProjects/ENV/lnglat-no-receptors.npz')
+lng_lat = np.load('/Users/lihaobo/PycharmProjects/data_no2/lnglat-no-receptors.npz')
 lon = lng_lat['lngs'][:73200].reshape([240, 305])[:, :304]
 lat = lng_lat['lats'][:73200].reshape([240, 305])[:, :304]
 
 # cal weight
-# weight = np.zeros([240, 304, 14])
-# d = np.zeros([240, 304, 14])
+# weight = np.zeros([240, 304, 12])
+# d = np.zeros([240, 304, 12])
+# stations = DI.location
+# stations = np.delete(stations, [0, 4], 1)
+#
 # for i in range(240):
 #     print(i)
 #     for j in range(304):
-#         for k in range(14):
-#             d[i, j, k] = np.linalg.norm(np.array((lat[i, j], lon[i, j])) - DI.location[:, k].astype(float))
-#         for k in range(14):
+#         for k in range(12):
+#             d[i, j, k] = np.linalg.norm(np.array((lat[i, j], lon[i, j])) - stations[:, k].astype(float))
+#         for k in range(12):
 #             weight[i, j, k] = (1 / d[i, j, k]) ** 2 / np.sum((1 / d[i, j, :]) ** 2)
-# np.save('weight.npy', weight)
+# np.save('weight_12.npy', weight)
 
-weight = np.load('weight.npy')
-weight = weight.reshape([-1, 14])
-# for i in range(0, 2):
-#     ii = i + 8
-#     print(ii)
-#     if ii == 8:
-#         aqms_p = aqms[ii*3000:, :]
-#         s_distribution = np.dot(weight, aqms_p.transpose())
-#         break
-#     else:
-#         aqms_p = aqms[ii*3000:(ii+1)*3000, :]
-#     print('calculating')
-#     tmp = np.dot(weight, aqms_p.transpose())
-#     if i == 0:
-#         s_distribution = tmp
-#     else:
-#         s_distribution = np.concatenate((s_distribution, tmp), axis=1)
-# s_distribution = s_distribution.reshape([240, 304, -1]).astype(float)
-# torch.save(torch.from_numpy(s_distribution), 'aqms_after_IDW5.pt')
-# print('saving done')
-# aqms1 = torch.load('aqms_after_IDW1.pt').float()
-# aqms2 = torch.load('aqms_after_IDW2.pt').float()
-# aqms3 = torch.load('aqms_after_IDW3.pt').float()
-# aqms4 = torch.load('aqms_after_IDW4.pt').float()
-# aqms5 = torch.load('aqms_after_IDW5.pt').float()
-# aqms = torch.cat((aqms1, aqms2, aqms3, aqms4, aqms5), 2)
-# torch.save(aqms, 'aqms_after_IDW_float.pt')
-aqms = torch.load('aqms_after_IDW.pt')
-adms = torch.load('/Users/lihaobo/PycharmProjects/ENV/NO2/data_adms.pt').view(-1, 240, 305)[:, :, :304].float()
+# weight = np.load('/Users/lihaobo/PycharmProjects/data_no2/weight_12.npy')
+# weight = weight.reshape([-1, 12])
+# weight = np.float32(weight)
+# aqms = np.delete(aqms, [0, 4], 1)
+# aqms = np.float32(aqms[:, :])
+# s_distribution = np.dot(weight, aqms.transpose())
+# torch.save(torch.from_numpy(s_distribution), 'aqms_after_IDW_12_12.pt')
+
+aqms = torch.load('/Users/lihaobo/PycharmProjects/data_no2/aqms_after_IDW_12_12.pt').view(240, 304, -1)
+adms = torch.load('/Users/lihaobo/PycharmProjects/data_no2/data_adms.pt').view(-1, 240, 305)[:, :, :304].float()
 adms = adms.permute(1, 2, 0)
 diff = adms - aqms * 1.88
-torch.save(diff, 'diff.pt')
+torch.save(diff, 'diff_12.pt')
 fig = plt.figure()
 ax = plt.axes(projection=ccrs.PlateCarree())
 cf = plt.contourf(lon, lat, aqms[:, :, 10], 60, transform=ccrs.PlateCarree())
@@ -83,3 +69,5 @@ ax.coastlines()
 cbar = fig.colorbar(cf, ax=ax, shrink=1)
 plt.show()
 pass
+
+
