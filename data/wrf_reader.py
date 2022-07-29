@@ -1,5 +1,6 @@
 import sys
 
+import torch
 from netCDF4 import Dataset
 import numpy as np
 # import cartopy.crs as ccrs
@@ -7,13 +8,14 @@ import numpy as np
 import pandas as pd
 import os
 
-# li2 = np.load('/Users/lihaobo/PycharmProjects/data_no2/wrf2020.npy')
-# li1 = np.load('/Users/lihaobo/PycharmProjects/data_no2/wrf.npy')
-# data = np.concatenate((li1, li2), axis=0)
-# data[:, 0] /= 10
-#
-# a
-# sys.exit()
+data = np.load('/Users/lihaobo/PycharmProjects/data_no2/wrf.npy')
+data[:, 2] /= 100
+data[:, 3] *= 10
+data[:, 4] /= 10000
+data = torch.from_numpy(data)
+data = np.float32(data)
+torch.save(data, 'wrf_after_cor.pt')
+
 
 # wrf_path = '/Volumes/8T/wrf/2019/201901/2019010112/wrfout_d04_2019-01-01_12:00:00'
 # wrf = Dataset(wrf_path)
