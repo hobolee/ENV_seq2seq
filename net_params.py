@@ -35,41 +35,61 @@ convlstm_decoder_params = [
     ]
 ]
 
-convgru_encoder_params1 = [
+
+convgru_encoder_params0 = [
     [
-        OrderedDict({'conv1_relu_1': [1, 4, 3, 1, 1]}),
-        OrderedDict({'conv2_relu_1': [8, 8, 3, 2, 1]}),
-        OrderedDict({'conv3_relu_1': [16, 16, 3, 2, 1]}),
-        OrderedDict({'conv4_relu_1': [32, 32, 3, 2, 1]}),
+        OrderedDict({'conv1_leaky_1': [6, 16, 3, 1, 1]}),
+        OrderedDict({'conv2_leaky_1': [32, 32, 3, 2, 1]}),
+        OrderedDict({'conv3_leaky_1': [64, 64, 3, 2, 1]}),
     ],
 
     [
-        CGRU_cell(shape=(120, 152), input_channels=4, filter_size=5, num_features=8),
-        CGRU_cell(shape=(60, 76), input_channels=8, filter_size=5, num_features=16),
-        CGRU_cell(shape=(30, 38), input_channels=16, filter_size=5, num_features=32),
-        CGRU_cell(shape=(15, 19), input_channels=32, filter_size=5, num_features=64)
+        CGRU_cell(shape=(60, 76), input_channels=16, filter_size=5, num_features=32),
+        CGRU_cell(shape=(30, 38), input_channels=32, filter_size=5, num_features=64),
+        CGRU_cell(shape=(15, 19), input_channels=64, filter_size=5, num_features=64)
+    ]
+]
+
+convgru_encoder_params1 = [
+    [
+        OrderedDict({'conv1_leaky_1': [1, 16, 3, 1, 1]}),
+        OrderedDict({'conv2_leaky_1': [64, 64, 3, 2, 1]}),
+        OrderedDict({'conv3_leaky_1': [96, 96, 3, 2, 1]}),
+        OrderedDict({'conv4_leaky_1': [128, 128, 3, 2, 1]}),
+    ],
+
+    [
+        CGRU_cell(shape=(120, 152), input_channels=16, filter_size=5, num_features=64),
+        CGRU_cell(shape=(60, 76), input_channels=64, filter_size=5, num_features=96),
+        CGRU_cell(shape=(30, 38), input_channels=96, filter_size=5, num_features=128),
+        CGRU_cell(shape=(15, 19), input_channels=128, filter_size=5, num_features=128)
     ]
 ]
 
 convgru_decoder_params1 = [
     [
-        OrderedDict({'deconv1_relu_1': [64, 64, 4, 2, 1]}),
-        OrderedDict({'deconv2_relu_1': [32, 32, 4, 2, 1]}),
-        OrderedDict({'deconv3_relu_1': [16, 16, 4, 2, 1]}),
-        OrderedDict({'conv4_relu_1': [8, 8, 3, 1, 1]}),
+        OrderedDict({'deconv1_leaky_1': [192, 192, 4, 2, 1]}),
+        OrderedDict({'deconv2_leaky_1': [128, 128, 4, 2, 1]}),
+        OrderedDict({'deconv3_leaky_1': [96, 96, 4, 2, 1]}),
+        # OrderedDict({'conv4_relu_1': [8, 8, 3, 1, 1]}),
+        OrderedDict({
+            'conv4_leaky_1': [64, 32, 3, 1, 1],
+            'conv5_no_1': [32, 16, 1, 1, 0],
+            'conv6_no_1': [16, 1, 1, 1, 0]
+        }),
     ],
 
     [
-        CGRU_cell(shape=(15, 19), input_channels=64, filter_size=5, num_features=64),
-        CGRU_cell(shape=(30, 38), input_channels=64, filter_size=5, num_features=32),
-        CGRU_cell(shape=(60, 76), input_channels=32, filter_size=5, num_features=16),
-        CGRU_cell(shape=(120, 152), input_channels=16, filter_size=5, num_features=8),
+        CGRU_cell(shape=(15, 19), input_channels=192, filter_size=5, num_features=192),
+        CGRU_cell(shape=(30, 38), input_channels=192, filter_size=5, num_features=128),
+        CGRU_cell(shape=(60, 76), input_channels=128, filter_size=5, num_features=96),
+        CGRU_cell(shape=(120, 152), input_channels=96, filter_size=5, num_features=64),
     ]
 ]
 convgru_encoder_params2 = [
     [
-        OrderedDict({'conv1_relu_1': [1, 4, 3, 1, 1]}),
-        OrderedDict({'conv2_relu_1': [8, 8, 3, 2, 1]}),
+        OrderedDict({'conv1_leaky_1': [1, 4, 3, 1, 1]}),
+        OrderedDict({'conv2_leaky_1': [8, 8, 3, 2, 1]}),
     ],
 
     [
@@ -80,9 +100,9 @@ convgru_encoder_params2 = [
 
 convgru_decoder_params2 = [
     [
-        OrderedDict({'deconv1_relu_1': [24, 24, 4, 2, 1]}),
+        OrderedDict({'deconv1_leaky_1': [24, 24, 4, 2, 1]}),
         OrderedDict({
-            'conv2_relu_1': [8, 32, 3, 1, 1],
+            'conv2_leaky_1': [8, 32, 3, 1, 1],
             'conv3_no_1': [32, 128, 1, 1, 0],
             'conv4_no_1': [128, 64, 1, 1, 0],
             'conv5_no_1': [64, 1, 1, 1, 0]

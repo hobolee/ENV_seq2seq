@@ -9,22 +9,73 @@ def load_adms(root):
     path = os.path.join(root, 'aqms_after_IDW.pt')
     aqms = torch.load(path).float()[:, :, :]
     aqms = aqms.permute(2, 0, 1)
-    path = os.path.join(root, 'diff_after_cor_12.pt')
-    adms = torch.load(path).float()[:, :, :2000]
+    path = os.path.join(root, 'diff_12.pt')
+    adms = torch.load(path).float()[:, :, 20:]
     adms = adms.permute(2, 0, 1)
+    path = os.path.join(root, 'wrf_after_cor.pt')
+    wrf = torch.load(path)[:-20, ...]
+    wrf = torch.from_numpy(wrf)
 
-    return adms, aqms
+    # adms_max = torch.max(adms)
+    # adms_min = torch.min(adms)
+    # adms = (adms - adms_min) / (adms_max - adms_min)
+
+    adms = np.array(adms)
+    adms = np.cbrt(adms)
+    adms = torch.from_numpy(adms)
+
+    adms_std = torch.std(adms, False)  #20.0351
+    adms_mean = torch.mean(adms)  #-12.4155
+    # adms_std = 20.0351
+    # adms_mean = -12.4155
+    # adms_std = 2.0674
+    # adms_mean = -1.4595
+    adms = (adms - adms_mean) / adms_std
+
+    wrf_std = torch.std(wrf, False)  #0.6242
+    wrf_mean = torch.mean(wrf)  #0.3027
+    wrf = (wrf - wrf_mean) / wrf_std
+    # wrf_max = torch.max(wrf).
+    # wrf_min = torch.min(wrf)
+    # adms_max = torch.max(adms)
+    # adms_min = torch.min(adms)
+
+    # for i in range(6):
+    #     wrf_std = torch.std(wrf[:, i, :, :], False)
+    #     wrf_mean = torch.mean(wrf[:, i, :, :])
+    #     wrf[:, i, :, :] = (wrf[:, i, :, :] - wrf_mean) / wrf_std
+
+    # adms = torch.complex(adms, torch.tensor(0.))
+    # adms = torch.pow(adms, 1/3)
+    # adms = adms.real
+    # adms = np.array(adms)
+    # adms = np.cbrt(adms)
+    # adms = torch.from_numpy(adms)
+    adms_min = torch.min(adms) # -2.2625
+    adms_max = torch.max(adms) # 2.4410
+    # adms = (adms - adms_min) / (adms_max - adms_min)
+
+
+    wrf = np.array(wrf)
+    wrf = np.cbrt(wrf)
+    wrf = torch.from_numpy(wrf)
+    wrf_min = torch.min(wrf)  # -2.2625
+    wrf_max = torch.max(wrf)  # 2.4410
+    wrf = (wrf - wrf_min) / (wrf_max - wrf_min)
+
+    return adms, aqms, wrf
 
 
 class ADMS(data.Dataset):
     def __init__(self, root, is_train, mode):
         super(ADMS, self).__init__()
-        self.adms, self.aqms = load_adms(root)
+        self.adms, self.aqms, self.wrf = load_adms(root)
         # self.adms = self.adms.view(-1, 1, 240, 305)[:, :, :, :304]
         self.adms = self.adms.view(-1, 1, 240, 304)
         self.aqms = self.aqms.view(-1, 1, 240, 304)
-        # self.aqms = self.aqms[:, :, ::2, ::2]
-        # self.adms = self.adms[:, :, ::2, ::2]
+        self.aqms = self.aqms[:, :, ::2, ::2]
+        self.adms = self.adms[:, :, ::2, ::2]
+
         self.length = len(self.adms) - 72 - 24
         self.example_indices = list(range(self.length))
 
@@ -38,6 +89,7 @@ class ADMS(data.Dataset):
         if self.mode == 'train':
             self.length = 8 * (self.length // 10)
             self.example_indices = self.example_indices[:self.length]
+            random.shuffle(self.example_indices, random=r)
         elif self.mode == 'valid':
             self.length = self.length // 10
             self.example_indices = self.example_indices[8*self.length:9*self.length]
@@ -55,8 +107,9 @@ class ADMS(data.Dataset):
         # output = self.adms[idx2-1:idx2+23, ...]
         output = self.adms[idx2 + 23, ...]
         input_decoder = self.aqms[idx2-72:idx2, ...]
+        wrf = self.wrf[idx2-72:idx2, ...]
         # input_decoder = None
-        out = [idx, output, input, input_decoder]
+        out = [idx, output, input, input_decoder, wrf]
         return out
 
     def __len__(self):

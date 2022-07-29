@@ -4,7 +4,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 from encoder import Encoder
 from decoder import Decoder
 from model import ED
-from net_params import convgru_encoder_params2, convgru_decoder_params2, convgru_encoder_params1, convgru_decoder_params1
+from net_params import convgru_encoder_params2, convgru_decoder_params2, convgru_encoder_params1, convgru_decoder_params1, convgru_encoder_params0
 from data.adms import ADMS
 import torch
 from torch import nn
@@ -17,7 +17,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2022-07-15T00-00-00_multi"
+TIMESTAMP = "2022-07-29T00-00-00_multi"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -69,6 +69,7 @@ validLoader = torch.utils.data.DataLoader(validFolder,
                                           batch_size=args.batch_size,
                                           shuffle=False)
 
+encoder_params0 = convgru_encoder_params0
 encoder_params1 = convgru_encoder_params1
 decoder_params1 = convgru_decoder_params1
 encoder_params2 = convgru_encoder_params2
@@ -78,11 +79,12 @@ def train():
     '''
     main function to run the training
     '''
+    encoder0 = Encoder(encoder_params0[0], encoder_params0[1])
     encoder1 = Encoder(encoder_params1[0], encoder_params1[1])
     decoder1 = Decoder(decoder_params1[0], decoder_params1[1])
     encoder2 = Encoder(encoder_params2[0], encoder_params2[1])
     decoder2 = Decoder(decoder_params2[0], decoder_params2[1])
-    net = ED(encoder1, encoder2, decoder1, decoder2)
+    net = ED(encoder0, encoder1, encoder2, decoder1, decoder2)
     run_dir = './runs/' + TIMESTAMP
     if not os.path.isdir(run_dir):
         os.makedirs(run_dir)
@@ -107,6 +109,7 @@ def train():
             os.makedirs(save_dir)
         cur_epoch = 0
     lossfunction = nn.MSELoss()
+    # lossfunction = nn.L1Loss()
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
     pla_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer,
                                                       factor=0.5,
@@ -128,15 +131,16 @@ def train():
         # train the model #
         ###################
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
-        for i, (idx, targetVar, inputVar, input_decoder) in enumerate(t):
+        for i, (idx, targetVar, inputVar, input_decoder, wrf) in enumerate(t):
             inputs = inputVar.to(device)  # B,S,C,H,W
             label = targetVar.to(device).squeeze()  # B,S,C,H,W
+            wrf = wrf.to(device)
             # input_decoder = input_decoder.to(device)
             # input_decoder = inputs.squeeze(dim=2)
             input_decoder = None
             optimizer.zero_grad()
             net.train()
-            pred = net(inputs, input_decoder)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
+            pred = net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
             # pred = net(inputs, input_decoder).squeeze()  # B,S,C,H,W
             loss = lossfunction(pred, label)
             loss_aver = loss.item()
@@ -155,14 +159,15 @@ def train():
         with torch.no_grad():
             net.eval()
             t = tqdm(validLoader, leave=False, total=len(validLoader))
-            for i, (idx, targetVar, inputVar, input_decoder) in enumerate(t):
+            for i, (idx, targetVar, inputVar, input_decoder, wrf) in enumerate(t):
                 inputs = inputVar.to(device)
                 label = targetVar.to(device).squeeze()
+                wrf = wrf.to(device)
                 # input_decoder = input_decoder.to(device)
                 # input_decoder = inputs.squeeze(dim=2)
                 input_decoder = None
                 # pred = net(inputs, input_decoder).squeeze()
-                pred = net(inputs, input_decoder)[:, -1, :, :, :].squeeze()
+                pred = net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze()
                 loss = lossfunction(pred, label)
                 loss_aver = loss.item()
                 # record validation loss
@@ -197,7 +202,7 @@ def train():
             'state_dict': net.state_dict(),
             'optimizer': optimizer.state_dict()
         }
-        early_stopping(valid_loss, model_dict, epoch, save_dir)
+        early_stopping(train_loss, valid_loss, model_dict, epoch, save_dir)
         if early_stopping.early_stop:
             print("Early stopping")
             break
