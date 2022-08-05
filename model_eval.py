@@ -56,8 +56,8 @@ def plot(pred, label, lon, lat, i, mode):
     fig = plt.figure(figsize=(16, 6))
     # norm = matplotlib.colors.Normalize(vmin=0, vmax=100)
     ax1 = plt.axes([0.03, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
-    pred[pred > 50] = 50
-    label[label > 50] = 50
+    pred[pred > 50] = 49.9
+    label[label > 50] = 49.9
     pred[pred < -50] = -50
     label[label < -50] = -50
     cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree(), levels=range(-50, 50))
@@ -181,23 +181,26 @@ def eval():
 
     # to track the validation loss as the model trains
     test_losses = []
-    label_list, pred_list = np.zeros([1000, 1, h, w]).astype(float), np.zeros([1000, 1, h, w]).astype(float)
+    label_list, pred_list = np.zeros([2626, 1, h, w]).astype(float), np.zeros([2626, 1, h, w]).astype(float)
 
     tb = SummaryWriter()
     with torch.no_grad():
         net.eval()
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
         for i, (idx, targetVar, inputVar, input_decoder, wrf) in enumerate(t):
-            if i == 1000:
-                break
+            # if i == 1000:
+            #     break
             inputs = inputVar.to(device)  # B,S,C,H,W
+            label = targetVar.to(device).squeeze()
             label = torch.pow((targetVar.to(device).squeeze() * (2.4410 + 2.2625) - 2.2625), 3) * 20.0351 - 12.4155   # B,S,C,H,W
+            # label = torch.pow(targetVar.to(device).squeeze(), 3) * 20.0351 - 12.4155
             wrf = wrf.to(device)
             # input_decoder = input_decoder.to(device)
             # input_decoder = inputs.squeeze(dim=2)
             input_decoder = None
-            # pred = net(inputs, input_decoder).squeeze()  # B,S,C,H,W
+            pred = net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
             pred = torch.pow((net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze() * (2.4410 + 2.2625) - 2.2625), 3) * 20.0351 - 12.4155
+            # pred = torch.pow(net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze(), 3) * 20.0351 - 12.4155
             if i == 0:
                 print(pred)
             #     tb.add_graph(net, inputs)
@@ -247,8 +250,8 @@ def eval_plot():
         aqms = aqms_data[::2, ::2, i + 72 + 23 + 20]
         aqms_12 = aqms_data_12[::2, ::2, i + 72 + 23 + 20]
         # aqms = aqms_data[:, :, i + 72 + 23]
-        pred = pred_list[i, 0, :, :]
-        label = label_list[i, 0, :, :]
+        pred = pred_list[i, 0, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1.5) ** 3 * 20.0351 - 12.4155
+        label = label_list[i, 0, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1) ** 3 * 20.0351 - 12.4155
 
         # pred, label = diff2adms(pred, label, aqms_12)
 
@@ -306,10 +309,10 @@ def eval_ts():
     cor_list, pred_station, label_station, diff_station, aqms_station, diff12_station = [], [], [], [], [], []
     # station = [150, 150]
     # station = [79, 168]
-    station = [96, 202]
+    # station = [130, 181]
     # station = [78, 182]
-    # station = [120, 154]
-    for i in range(1000):
+    station = [120, 154]
+    for i in range(2626):
         aqms = aqms_data[::2, ::2, i + 72 + 23 + 20]
         aqms_12 = aqms_data_12[::2, ::2, i + 72 + 23 + 20]
         diff = diff_data[::2, ::2, i + 72 + 23 + 20]
@@ -327,8 +330,8 @@ def eval_ts():
         # label_station.append(label[station[0], station[1]])
         # diff_station.append(diff[station[0], station[1]])
         # aqms_station.append(aqms[station[0], station[1]] * 1.88)
-        pred_station.append(pred[station[0] // 2, station[1] // 2])
-        label_station.append(label[station[0] // 2, station[1] // 2])
+        pred_station.append((pred[station[0] // 2, station[1] // 2]))# * (2.4410 + 2.2625) - 2.2625) * 1.5) ** 3) * 20.0351 - 12.4155
+        label_station.append((label[station[0] // 2, station[1] // 2]))# * (2.4410 + 2.2625) - 2.2625) ** 3) * 20.0351 - 12.4155
         diff_station.append(diff[station[0] // 2, station[1] // 2])
         diff12_station.append(diff_12[station[0] // 2, station[1] // 2])
         aqms_station.append(aqms[station[0] // 2, station[1] // 2] * 1.88)
@@ -342,7 +345,7 @@ def eval_ts():
         print(cal_IOA(pred_station, aqms_station))
         print(cal_IOA(aqms_station, label_station))
     plt.figure()
-    x = np.arange(1000 - lag)
+    x = np.arange(2626 - lag)
     if lag:
         plt.plot(x, pred_station[lag:], 'b', x, label_station[:-lag], 'r', x, diff_station[:-lag], 'k', x, diff12_station[:-lag])
     else:

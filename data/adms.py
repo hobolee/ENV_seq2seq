@@ -20,16 +20,14 @@ def load_adms(root):
     # adms_min = torch.min(adms)
     # adms = (adms - adms_min) / (adms_max - adms_min)
 
-    adms = np.array(adms)
-    adms = np.cbrt(adms)
-    adms = torch.from_numpy(adms)
+    # adms = np.array(adms)
+    # adms = np.cbrt(adms)
+    # adms = torch.from_numpy(adms)
 
-    adms_std = torch.std(adms, False)  #20.0351
-    adms_mean = torch.mean(adms)  #-12.4155
-    # adms_std = 20.0351
-    # adms_mean = -12.4155
-    # adms_std = 2.0674
-    # adms_mean = -1.4595
+    # adms_std = torch.std(adms, False)  #20.0351
+    # adms_mean = torch.mean(adms)  #-12.4155
+    adms_std = 20.0351
+    adms_mean = -12.4155
     adms = (adms - adms_mean) / adms_std
 
     wrf_std = torch.std(wrf, False)  #0.6242
@@ -40,20 +38,15 @@ def load_adms(root):
     # adms_max = torch.max(adms)
     # adms_min = torch.min(adms)
 
-    # for i in range(6):
-    #     wrf_std = torch.std(wrf[:, i, :, :], False)
-    #     wrf_mean = torch.mean(wrf[:, i, :, :])
-    #     wrf[:, i, :, :] = (wrf[:, i, :, :] - wrf_mean) / wrf_std
-
     # adms = torch.complex(adms, torch.tensor(0.))
     # adms = torch.pow(adms, 1/3)
     # adms = adms.real
-    # adms = np.array(adms)
-    # adms = np.cbrt(adms)
-    # adms = torch.from_numpy(adms)
+    adms = np.array(adms)
+    adms = np.cbrt(adms)
+    adms = torch.from_numpy(adms)
     adms_min = torch.min(adms) # -2.2625
     adms_max = torch.max(adms) # 2.4410
-    # adms = (adms - adms_min) / (adms_max - adms_min)
+    adms = (adms - adms_min) / (adms_max - adms_min)
 
 
     wrf = np.array(wrf)

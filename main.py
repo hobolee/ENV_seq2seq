@@ -104,6 +104,8 @@ def train():
         optimizer = torch.optim.Adam(net.parameters())
         optimizer.load_state_dict(model_info['optimizer'])
         cur_epoch = model_info['epoch'] + 1
+        optimizer.param_groups[0]["lr"] = 1e-07
+        pass
     else:
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
