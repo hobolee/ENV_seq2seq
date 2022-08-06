@@ -39,7 +39,7 @@ class ED(nn.Module):
         state1 = self.encoder1(input)
         state0 = list(state0)
         state1 = list(state1)
-        state1[3] = torch.concat((state0[2], state1[3]), 1)
+        state1[3] = torch.concat((state0[0], state1[3]), 1)
         # state2 = self.encoder2(input)
         output_low = self.decoder1(state1, input_decoder)
         # output_low = output_low[:, -1, :, :, :].squeeze()

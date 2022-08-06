@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from ConvRNN import CGRU_cell, CLSTM_cell
+from ConvRNN import CGRU_cell, CLSTM_cell, CGRU_cell_wrf
 
 
 # build model
@@ -39,14 +39,14 @@ convlstm_decoder_params = [
 convgru_encoder_params0 = [
     [
         OrderedDict({'conv1_leaky_1': [6, 16, 3, 1, 1]}),
-        OrderedDict({'conv2_leaky_1': [32, 32, 3, 2, 1]}),
-        OrderedDict({'conv3_leaky_1': [64, 64, 3, 2, 1]}),
+        OrderedDict({'conv2_leaky_1': [16, 32, 3, 2, 1]}),
+        OrderedDict({'conv3_leaky_1': [32, 64, 3, 2, 1]}),
     ],
 
     [
-        CGRU_cell(shape=(60, 76), input_channels=16, filter_size=5, num_features=32),
-        CGRU_cell(shape=(30, 38), input_channels=32, filter_size=5, num_features=64),
-        CGRU_cell(shape=(15, 19), input_channels=64, filter_size=5, num_features=64)
+        CGRU_cell_wrf(shape=(60, 76), input_channels=16, filter_size=5, num_features=32),
+        CGRU_cell_wrf(shape=(30, 38), input_channels=32, filter_size=5, num_features=64),
+        CGRU_cell_wrf(shape=(15, 19), input_channels=64, filter_size=5, num_features=64)
     ]
 ]
 

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from lib import DataInterpolate
 import pandas as pd
 from data.adms import ADMS
-from encoder import Encoder
+from encoder import Encoder, Encoder_wrf
 from decoder import Decoder
 from model import ED
 from net_params import convgru_encoder_params2, convgru_decoder_params2, convgru_encoder_params1, convgru_decoder_params1, convgru_encoder_params0
@@ -133,7 +133,7 @@ def eval():
         torch.cuda.manual_seed(random_seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    TIMESTAMP = "2022-07-29T00-00-00_multi"
+    TIMESTAMP = "2022-08-05T00-00-00_multi"
     save_dir = './save_model/' + TIMESTAMP
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size',
@@ -162,7 +162,7 @@ def eval():
     decoder_params1 = convgru_decoder_params1
     encoder_params2 = convgru_encoder_params2
     decoder_params2 = convgru_decoder_params2
-    encoder0 = Encoder(encoder_params0[0], encoder_params0[1])
+    encoder0 = Encoder_wrf(encoder_params0[0], encoder_params0[1])
     encoder1 = Encoder(encoder_params1[0], encoder_params1[1])
     decoder1 = Decoder(decoder_params1[0], decoder_params1[1])
     encoder2 = Encoder(encoder_params2[0], encoder_params2[1])
@@ -347,7 +347,7 @@ def eval_ts():
     plt.figure()
     x = np.arange(2626 - lag)
     if lag:
-        plt.plot(x, pred_station[lag:], 'b', x, label_station[:-lag], 'r', x, diff_station[:-lag], 'k', x, diff12_station[:-lag])
+        plt.plot(x, pred_station[lag:], 'b', x, label_station[:-lag], 'r')#, x, diff_station[:-lag], 'k', x, diff12_station[:-lag])
     else:
         plt.plot(x, pred_station, 'b', x, label_station, 'r')#, x, aqms_station, 'k')
     plt.show()
@@ -355,6 +355,6 @@ def eval_ts():
 
 if __name__ == "__main__":
     # eval()
-    # eval_plot()
-    eval_ts()
+    eval_plot()
+    # eval_ts()
     # eval_adms_station()

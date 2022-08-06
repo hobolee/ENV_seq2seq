@@ -1,7 +1,7 @@
 import os
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-from encoder import Encoder
+from encoder import Encoder, Encoder_wrf
 from decoder import Decoder
 from model import ED
 from net_params import convgru_encoder_params2, convgru_decoder_params2, convgru_encoder_params1, convgru_decoder_params1, convgru_encoder_params0
@@ -17,7 +17,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2022-07-29T00-00-00_multi"
+TIMESTAMP = "2022-08-05T00-00-00_multi"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -31,7 +31,7 @@ parser.add_argument('--batch_size',
                     default=2,
                     type=int,
                     help='mini-batch size')
-parser.add_argument('-lr', default=1e-5, type=float, help='G learning rate')
+parser.add_argument('-lr', default=1e-4, type=float, help='G learning rate')
 parser.add_argument('-frames_input',
                     default=72,
                     type=int,
@@ -79,7 +79,7 @@ def train():
     '''
     main function to run the training
     '''
-    encoder0 = Encoder(encoder_params0[0], encoder_params0[1])
+    encoder0 = Encoder_wrf(encoder_params0[0], encoder_params0[1])
     encoder1 = Encoder(encoder_params1[0], encoder_params1[1])
     decoder1 = Decoder(decoder_params1[0], decoder_params1[1])
     encoder2 = Encoder(encoder_params2[0], encoder_params2[1])
