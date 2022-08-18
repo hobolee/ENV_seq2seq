@@ -22,7 +22,8 @@ import cartopy.crs as ccrs
 from tensorboardX import SummaryWriter
 import matplotlib
 
-w, h = 152, 120
+w, h = 304, 240
+stride = 1
 
 def aqms_correction(pred, weight, i):
     stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
@@ -56,12 +57,12 @@ def plot(pred, label, lon, lat, i, mode):
     fig = plt.figure(figsize=(16, 6))
     # norm = matplotlib.colors.Normalize(vmin=0, vmax=100)
     ax1 = plt.axes([0.03, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
-    pred[pred > 50] = 49.9
-    label[label > 50] = 49.9
-    pred[pred < -50] = -50
-    label[label < -50] = -50
-    cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree(), levels=range(-50, 50))
-    # cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree(), levels=range(151))
+    pred[pred > 150] = 149.9
+    label[label > 150] = 149.9
+    pred[pred < 0] = 0
+    label[label < 0] = 0
+    # cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree(), levels=range(-50, 50))
+    cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree(), levels=range(151))
     # cf1 = plt.contourf(lon, lat, pred, 50, transform=ccrs.PlateCarree())
     # cf1 = plt.contourf(lon, lat, pred)
     ax1.coastlines()
@@ -69,8 +70,8 @@ def plot(pred, label, lon, lat, i, mode):
     ax1.set_xlabel('lon')
     ax1.set_ylabel('lat')
     ax2 = plt.axes([0.46, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
-    cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree(), levels=range(-50, 50))
-    # cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree(), levels=range(151))
+    # cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree(), levels=range(-50, 50))
+    cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree(), levels=range(151))
     # cf2 = plt.contourf(lon, lat, label, 50, transform=ccrs.PlateCarree())
     # cf2 = plt.contourf(lon, lat, label)
     ax2.set_xlabel('lon')
@@ -133,7 +134,7 @@ def eval():
         torch.cuda.manual_seed(random_seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    TIMESTAMP = "2022-08-05T00-00-00_multi"
+    TIMESTAMP = "2022-08-12T00-00-00_multi"
     save_dir = './save_model/' + TIMESTAMP
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size',
@@ -162,7 +163,7 @@ def eval():
     decoder_params1 = convgru_decoder_params1
     encoder_params2 = convgru_encoder_params2
     decoder_params2 = convgru_decoder_params2
-    encoder0 = Encoder_wrf(encoder_params0[0], encoder_params0[1])
+    encoder0 = Encoder(encoder_params0[0], encoder_params0[1])
     encoder1 = Encoder(encoder_params1[0], encoder_params1[1])
     decoder1 = Decoder(decoder_params1[0], decoder_params1[1])
     encoder2 = Encoder(encoder_params2[0], encoder_params2[1])
@@ -181,26 +182,26 @@ def eval():
 
     # to track the validation loss as the model trains
     test_losses = []
-    label_list, pred_list = np.zeros([2626, 1, h, w]).astype(float), np.zeros([2626, 1, h, w]).astype(float)
+    label_list, pred_list = np.zeros([1000, 1, h, w]).astype(float), np.zeros([1000, 1, h, w]).astype(float)
 
     tb = SummaryWriter()
     with torch.no_grad():
         net.eval()
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
         for i, (idx, targetVar, inputVar, input_decoder, wrf) in enumerate(t):
-            # if i == 1000:
-            #     break
+            if i == 1000:
+                break
             inputs = inputVar.to(device)  # B,S,C,H,W
             label = targetVar.to(device).squeeze()
-            label = torch.pow((targetVar.to(device).squeeze() * (2.4410 + 2.2625) - 2.2625), 3) * 20.0351 - 12.4155   # B,S,C,H,W
-            # label = torch.pow(targetVar.to(device).squeeze(), 3) * 20.0351 - 12.4155
+            label = torch.pow((targetVar.to(device).squeeze() * (2.8531 + 1.7875) - 1.7875), 3) * 22.8285 + 23.8102
+            # label = targetVar.to(device).squeeze() * 22.8285 + 23.8102 # B,S,C,H,W
             wrf = wrf.to(device)
             # input_decoder = input_decoder.to(device)
             # input_decoder = inputs.squeeze(dim=2)
             input_decoder = None
             pred = net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
-            pred = torch.pow((net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze() * (2.4410 + 2.2625) - 2.2625), 3) * 20.0351 - 12.4155
-            # pred = torch.pow(net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze(), 3) * 20.0351 - 12.4155
+            pred = torch.pow((net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze() * (2.8531 + 1.7875) - 1.7875), 3) * 22.8285 + 23.8102
+            # pred = net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze() * 22.8285 + 23.8102
             if i == 0:
                 print(pred)
             #     tb.add_graph(net, inputs)
@@ -235,23 +236,30 @@ def eval_plot():
     label_list = result[1]
     aqms_data = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\aqms_12.pt')
     aqms_data = aqms_data.numpy()
-    aqms_data_12 = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\aqms_after_IDW_12.pt')
+    aqms_data_12 = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\aqms_after_IDW.pt')
     aqms_data_12 = aqms_data_12.view((240, 304, -1))
     aqms_data_12 = aqms_data_12.numpy()
     lng_lat = np.load(r'C:\Users\lihaobo\Downloads\data\data_no2\lnglat-no-receptors.npz')
-    lon = lng_lat['lngs'][:73200].reshape([240, 305])[:, :304][::2, ::2]
-    lat = lng_lat['lats'][:73200].reshape([240, 305])[:, :304][::2, ::2]
+    lon = lng_lat['lngs'][:73200].reshape([240, 305])[:, :304][::stride, ::stride]
+    lat = lng_lat['lats'][:73200].reshape([240, 305])[:, :304][::stride, ::stride]
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     ioa_list = []
     mse_before, mse_after, mse_before_n, mse_after_n, mse_before_m, mse_after_m = [], [], [], [], [], []
     for i in range(1000):
         print(i)
-        aqms = aqms_data[::2, ::2, i + 72 + 23 + 20]
-        aqms_12 = aqms_data_12[::2, ::2, i + 72 + 23 + 20]
+        aqms = aqms_data[:, :, i + 72 + 23 + 20]
+        aqms_12 = aqms_data_12[:, :, i + 72 + 23 + 20]
         # aqms = aqms_data[:, :, i + 72 + 23]
         pred = pred_list[i, 0, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1.5) ** 3 * 20.0351 - 12.4155
         label = label_list[i, 0, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1) ** 3 * 20.0351 - 12.4155
+        # plt.figure()
+        # plt.contourf(pred)
+        # plt.colorbar()
+        # plt.figure()
+        # plt.contourf(label)
+        # plt.colorbar()
+        # plt.show()
 
         # pred, label = diff2adms(pred, label, aqms_12)
 
@@ -296,32 +304,34 @@ def eval_ts():
     label_list = result[1]
     aqms_data = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\aqms_after_IDW.pt')
     aqms_data = aqms_data.numpy()
-    aqms_data_12 = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\aqms_after_IDW_12.pt')
+    aqms_data_12 = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\aqms_after_IDW.pt')
     aqms_data_12 = aqms_data_12.view((240, 304, -1))
     aqms_data_12 = aqms_data_12.numpy()
 
     diff_data = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\diff.pt')
     diff_data = diff_data.numpy()
-    diff_12_data = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\diff_12_2.pt')
+    diff_12_data = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\diff.pt')
     diff_12_data = diff_12_data.numpy()
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station, diff_station, aqms_station, diff12_station = [], [], [], [], [], []
     # station = [150, 150]
-    # station = [79, 168]
+    station = [79, 168]
     # station = [130, 181]
     # station = [78, 182]
-    station = [120, 154]
-    for i in range(2626):
-        aqms = aqms_data[::2, ::2, i + 72 + 23 + 20]
-        aqms_12 = aqms_data_12[::2, ::2, i + 72 + 23 + 20]
-        diff = diff_data[::2, ::2, i + 72 + 23 + 20]
-        diff_12 = diff_12_data[::2, ::2, i + 72 + 23 + 20]
+    # station = [120, 154]
+    for i in range(1000):
+        aqms = aqms_data[:, :, i + 23678]
+        aqms_12 = aqms_data_12[:, :, i + 72 + 23 + 20]
+        diff = diff_data[:, :, i + 72 + 23 + 20]
+        diff_12 = diff_12_data[:, :, i + 72 + 23 + 20]
         # aqms = aqms_data[:, :, i + 72 + 23]
         # diff = diff_data[:, :, i + 72 + 23]
         # diff_12 = diff_12[:, :, i + 72 + 23]
         pred = pred_list[i, 0, :, :]
         label = label_list[i, 0, :, :]
+        label[label < 0] = 0
+        pred[pred < 0] = 0
         # pred, label = diff2adms(pred, label, aqms_12)
         # pred = mean_corection(pred, aqms)
         # pred = negetive_correction(pred)
@@ -330,11 +340,11 @@ def eval_ts():
         # label_station.append(label[station[0], station[1]])
         # diff_station.append(diff[station[0], station[1]])
         # aqms_station.append(aqms[station[0], station[1]] * 1.88)
-        pred_station.append((pred[station[0] // 2, station[1] // 2]))# * (2.4410 + 2.2625) - 2.2625) * 1.5) ** 3) * 20.0351 - 12.4155
-        label_station.append((label[station[0] // 2, station[1] // 2]))# * (2.4410 + 2.2625) - 2.2625) ** 3) * 20.0351 - 12.4155
-        diff_station.append(diff[station[0] // 2, station[1] // 2])
-        diff12_station.append(diff_12[station[0] // 2, station[1] // 2])
-        aqms_station.append(aqms[station[0] // 2, station[1] // 2] * 1.88)
+        pred_station.append((pred[station[0] // stride, station[1] // stride]))# * (2.4410 + 2.2625) - 2.2625) * 1.5) ** 3) * 20.0351 - 12.4155
+        label_station.append((label[station[0] // stride, station[1] // stride]))# * (2.4410 + 2.2625) - 2.2625) ** 3) * 20.0351 - 12.4155
+        diff_station.append(diff[station[0] // stride, station[1] // stride])
+        diff12_station.append(diff_12[station[0] // stride, station[1] // stride])
+        aqms_station.append(aqms[station[0] // stride, station[1] // stride] * 1.88)
     lag = 0
     if lag:
         print(np.corrcoef(pred_station[lag:], label_station[:-lag]))
@@ -345,7 +355,7 @@ def eval_ts():
         print(cal_IOA(pred_station, aqms_station))
         print(cal_IOA(aqms_station, label_station))
     plt.figure()
-    x = np.arange(2626 - lag)
+    x = np.arange(1000 - lag)
     if lag:
         plt.plot(x, pred_station[lag:], 'b', x, label_station[:-lag], 'r')#, x, diff_station[:-lag], 'k', x, diff12_station[:-lag])
     else:
@@ -357,4 +367,3 @@ if __name__ == "__main__":
     # eval()
     eval_plot()
     # eval_ts()
-    # eval_adms_station()

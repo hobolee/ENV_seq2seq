@@ -17,7 +17,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2022-08-05T00-00-00_multi"
+TIMESTAMP = "2022-08-12T00-00-00_multi"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -79,7 +79,7 @@ def train():
     '''
     main function to run the training
     '''
-    encoder0 = Encoder_wrf(encoder_params0[0], encoder_params0[1])
+    encoder0 = Encoder(encoder_params0[0], encoder_params0[1])
     encoder1 = Encoder(encoder_params1[0], encoder_params1[1])
     decoder1 = Decoder(decoder_params1[0], decoder_params1[1])
     encoder2 = Encoder(encoder_params2[0], encoder_params2[1])
@@ -104,7 +104,7 @@ def train():
         optimizer = torch.optim.Adam(net.parameters())
         optimizer.load_state_dict(model_info['optimizer'])
         cur_epoch = model_info['epoch'] + 1
-        optimizer.param_groups[0]["lr"] = 1e-07
+        optimizer.param_groups[0]["lr"] = 1e-06
         pass
     else:
         if not os.path.isdir(save_dir):

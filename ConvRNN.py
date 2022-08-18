@@ -25,7 +25,6 @@ class CGRU_cell(nn.Module):
             nn.GroupNorm(self.num_features // 8, self.num_features))
 
     def forward(self, inputs=None, hidden_state=None, seq_len=24):
-        # seq_len=10 for moving_mnist
         if hidden_state is None:
             htprev = torch.zeros(inputs.size(1), self.num_features,
                                  self.shape[0], self.shape[1]).to(torch.device("cuda:0"))
