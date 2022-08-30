@@ -100,7 +100,7 @@ class ADMS(data.Dataset):
         # print(idx2)
         input = self.aqms[idx2-72:idx2, ...]
         # output = self.adms[idx2-1:idx2+23, ...]
-        output = self.adms[idx2 - 1, ...]
+        output = self.adms[idx2 - 1:idx2+23, ...]
         input_decoder = self.aqms[idx2-72:idx2, ...]
         wrf = self.wrf[idx2-72:idx2, ...]#.view(1, 6, 60, 76)
         # input_decoder = None

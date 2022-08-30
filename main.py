@@ -104,15 +104,17 @@ def train():
         optimizer = torch.optim.Adam(net.parameters())
         optimizer.load_state_dict(model_info['optimizer'])
         cur_epoch = model_info['epoch'] + 1
-        optimizer.param_groups[0]["lr"] = 1e-06
+        # optimizer.param_groups[0]["lr"] = 1e-06
+        optimizer = optim.Adam(net.parameters(), lr=1e-7, weight_decay=0.01)
         pass
     else:
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         cur_epoch = 0
+        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=0.01)
     lossfunction = nn.MSELoss()
     # lossfunction = nn.L1Loss()
-    optimizer = optim.Adam(net.parameters(), lr=args.lr)
+
     pla_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer,
                                                       factor=0.5,
                                                       patience=4,
@@ -142,13 +144,13 @@ def train():
             input_decoder = None
             optimizer.zero_grad()
             net.train()
-            pred = net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
+            pred = net(inputs, input_decoder, wrf)[:, -24:, :, :, :].squeeze()  # B,S,C,H,W
             # pred = net(inputs, input_decoder).squeeze()  # B,S,C,H,W
             loss = lossfunction(pred, label)
             loss_aver = loss.item()
             train_losses.append(loss_aver)
             loss.backward()
-            # torch.nn.utils.clip_grad_value_(net.parameters(), clip_value=10.0)
+            torch.nn.utils.clip_grad_value_(net.parameters(), clip_value=10.0)
             optimizer.step()
             t.set_postfix({
                 'trainloss': '{:.6f}'.format(loss_aver),
@@ -169,7 +171,7 @@ def train():
                 # input_decoder = inputs.squeeze(dim=2)
                 input_decoder = None
                 # pred = net(inputs, input_decoder).squeeze()
-                pred = net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze()
+                pred = net(inputs, input_decoder, wrf)[:, -24:, :, :, :].squeeze()
                 loss = lossfunction(pred, label)
                 loss_aver = loss.item()
                 # record validation loss

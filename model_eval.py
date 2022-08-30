@@ -182,14 +182,14 @@ def eval():
 
     # to track the validation loss as the model trains
     test_losses = []
-    label_list, pred_list = np.zeros([1000, 1, h, w]).astype(float), np.zeros([1000, 1, h, w]).astype(float)
+    label_list, pred_list = np.zeros([500, 24, h, w]).astype(float), np.zeros([500, 24, h, w]).astype(float)
 
     tb = SummaryWriter()
     with torch.no_grad():
         net.eval()
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
         for i, (idx, targetVar, inputVar, input_decoder, wrf) in enumerate(t):
-            if i == 1000:
+            if i == 500:
                 break
             inputs = inputVar.to(device)  # B,S,C,H,W
             label = targetVar.to(device).squeeze()
@@ -199,8 +199,8 @@ def eval():
             # input_decoder = input_decoder.to(device)
             # input_decoder = inputs.squeeze(dim=2)
             input_decoder = None
-            pred = net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze()  # B,S,C,H,W
-            pred = torch.pow((net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze() * (2.8531 + 1.7875) - 1.7875), 3) * 22.8285 + 23.8102
+            # pred = net(inputs, input_decoder, wrf)[:, -24, :, :, :].squeeze()  # B,S,C,H,W
+            pred = torch.pow((net(inputs, input_decoder, wrf)[:, -24:, :, :, :].squeeze() * (2.8531 + 1.7875) - 1.7875), 3) * 22.8285 + 23.8102
             # pred = net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze() * 22.8285 + 23.8102
             if i == 0:
                 print(pred)
@@ -222,7 +222,7 @@ def eval():
     tb.flush()
     tb.close()
     res = [pred_list, label_list]
-    np.save('eval_result_diff_72to24', res)
+    np.save('eval_result.npy', res)
 
 
 def eval_plot():
@@ -231,7 +231,7 @@ def eval_plot():
     plot the loss curve
     :return:
     '''
-    result = np.load('eval_result_diff_72to24.npy', allow_pickle=True)
+    result = np.load('eval_result.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
     aqms_data = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\aqms_12.pt')
@@ -246,13 +246,13 @@ def eval_plot():
     weight = weight.reshape([-1, 14])
     ioa_list = []
     mse_before, mse_after, mse_before_n, mse_after_n, mse_before_m, mse_after_m = [], [], [], [], [], []
-    for i in range(1000):
+    for i in range(2626):
         print(i)
         aqms = aqms_data[:, :, i + 72 + 23 + 20]
         aqms_12 = aqms_data_12[:, :, i + 72 + 23 + 20]
         # aqms = aqms_data[:, :, i + 72 + 23]
-        pred = pred_list[i, 0, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1.5) ** 3 * 20.0351 - 12.4155
-        label = label_list[i, 0, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1) ** 3 * 20.0351 - 12.4155
+        pred = pred_list[i, 24, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1.5) ** 3 * 20.0351 - 12.4155
+        label = label_list[i, 24, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1) ** 3 * 20.0351 - 12.4155
         # plt.figure()
         # plt.contourf(pred)
         # plt.colorbar()
@@ -299,7 +299,7 @@ def eval_plot():
 
 
 def eval_ts():
-    result = np.load('eval_result_diff_72to24.npy', allow_pickle=True)
+    result = np.load('eval_result.npy', allow_pickle=True)
     pred_list = result[0]
     label_list = result[1]
     aqms_data = torch.load(r'C:\Users\lihaobo\Downloads\data\data_no2\aqms_after_IDW.pt')
@@ -320,7 +320,7 @@ def eval_ts():
     # station = [130, 181]
     # station = [78, 182]
     # station = [120, 154]
-    for i in range(1000):
+    for i in range(500):
         aqms = aqms_data[:, :, i + 23678]
         aqms_12 = aqms_data_12[:, :, i + 72 + 23 + 20]
         diff = diff_data[:, :, i + 72 + 23 + 20]
@@ -355,7 +355,7 @@ def eval_ts():
         print(cal_IOA(pred_station, aqms_station))
         print(cal_IOA(aqms_station, label_station))
     plt.figure()
-    x = np.arange(1000 - lag)
+    x = np.arange(500 - lag)
     if lag:
         plt.plot(x, pred_station[lag:], 'b', x, label_station[:-lag], 'r')#, x, diff_station[:-lag], 'k', x, diff12_station[:-lag])
     else:
@@ -365,5 +365,5 @@ def eval_ts():
 
 if __name__ == "__main__":
     # eval()
-    eval_plot()
-    # eval_ts()
+    # eval_plot()
+    eval_ts()
