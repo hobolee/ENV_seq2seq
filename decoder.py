@@ -16,7 +16,7 @@ class Decoder(nn.Module):
                     make_layers(params))
 
     def forward_by_stage(self, inputs, state, subnet, rnn):
-        inputs, state_stage = rnn(inputs, state, seq_len=24)
+        inputs, state_stage = rnn(inputs, state, seq_len=36)
         seq_number, batch_size, input_channel, height, width = inputs.size()
         inputs = torch.reshape(inputs, (-1, input_channel, height, width))
         inputs = subnet(inputs)
