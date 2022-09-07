@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 
 
 def load_adms(root):
-    # path = os.path.join(root, 'aqms_after_IDW.pt')
-    # aqms1 = torch.load(path).float()[:, :, 20 + 24*8:]
-    # aqms1 = aqms1.permute(2, 0, 1)
+    path = os.path.join(root, 'aqms_after_IDW.pt')
+    aqms = torch.load(path).float()[:, :, 20 + 24*8:]
+    aqms = aqms.permute(2, 0, 1)
 
-    path = os.path.join(root, 'aqms_pred_IDW.pt')
-    aqms2 = torch.load(path).float()[:, :, 20:]
-    aqms2 = aqms2.permute(2, 0, 1)
+    # path = os.path.join(root, 'aqms_pred_IDW.pt')
+    # aqms = torch.load(path).float()[:, :, 20:]
+    # aqms = aqms.permute(2, 0, 1)
 
     path = os.path.join(root, 'adms_after_cor.pt')
     adms = torch.load(path).float()[:, :, 20 + 24*8:]
@@ -30,13 +30,9 @@ def load_adms(root):
     wrf = torch.load(path)[24 * 8:-20, ...]
     wrf = torch.from_numpy(wrf)
 
-    # aqms1_std = torch.std(aqms1, False)  #11.5286
-    # aqms1_mean = torch.mean(aqms1)  #21.9199
-    # aqms1 = (aqms1 - aqms1_mean) / aqms1_std
-
-    aqms2_std = torch.std(aqms2, False)  # 11.5286
-    aqms2_mean = torch.mean(aqms2)  # 21.9199
-    aqms2 = (aqms2 - aqms2_mean) / aqms2_std
+    aqms_std = torch.std(aqms, False)  # 11.5286
+    aqms_mean = torch.mean(aqms)  # 21.9199
+    aqms = (aqms - aqms_mean) / aqms_std
 
     # adms_std = torch.std(adms, False)  # 22.8285   22.7097
     # adms_mean = torch.mean(adms)  # 23.8102   23.6387
@@ -67,19 +63,16 @@ def load_adms(root):
     # plt.plot((aqms[:, 120, 154] * aqms_std + aqms_mean) * 1.88, 'r')
     # plt.show()
 
-    return adms, aqms2, wrf
+    return adms, aqms, wrf
 
 
 class ADMS(data.Dataset):
     def __init__(self, root, is_train, mode):
         super(ADMS, self).__init__()
-        self.adms, self.aqms2, self.wrf = load_adms(root)
+        self.adms, self.aqms, self.wrf = load_adms(root)
         self.adms = self.adms.view(-1, 1, 240, 304)#[:, :, :, :304]
-        # self.adms = self.adms.view(-1, 1, 240, 304)
-        # self.aqms1 = self.aqms1.view(-1, 1, 240, 304)
-        # self.aqms1 = self.aqms1[:, :, ::1, ::1]
-        self.aqms2 = self.aqms2.view(-1, 1, 240, 304)
-        self.aqms2 = self.aqms2[:, :, ::1, ::1]
+        self.aqms = self.aqms.view(-1, 1, 240, 304)
+        self.aqms = self.aqms[:, :, ::1, ::1]
         self.adms = self.adms[:, :, ::1, ::1]
 
         self.length = len(self.adms) - 72 - 24
@@ -109,10 +102,10 @@ class ADMS(data.Dataset):
     def __getitem__(self, idx):
         idx2 = self.example_indices[idx] + 72
         # print(idx2)
-        input = self.aqms2[idx2-72:idx2, ...]
+        input = self.aqms[idx2-72:idx2, ...]
         # output = self.adms[idx2-1:idx2+23, ...]
         output = self.adms[idx2 - 1, ...]
-        input_decoder = self.aqms2[idx2-72:idx2, ...]
+        input_decoder = self.aqms[idx2-72:idx2, ...]
         wrf = self.wrf[idx2-72:idx2, ...]#.view(1, 6, 60, 76)
         # input_decoder = None
         out = [idx, output, input, input_decoder, wrf]
