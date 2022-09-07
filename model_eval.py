@@ -24,6 +24,7 @@ import matplotlib
 
 w, h = 304, 240
 stride = 1
+length = 1
 
 def aqms_correction(pred, weight, i):
     stations = [[78, 182], [79, 168], [81, 162], [80, 199], [120, 154], [96, 202], [101, 173], [130, 181],
@@ -54,13 +55,17 @@ def cal_IOA(pred, label):
 
 
 def plot(pred, label, lon, lat, i, mode):
-    fig = plt.figure(figsize=(16, 6))
+    diff = pred - label
+    fig = plt.figure(figsize=(24, 6))
     # norm = matplotlib.colors.Normalize(vmin=0, vmax=100)
-    ax1 = plt.axes([0.03, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
+    ax1 = plt.axes([0.03, 0.1, 0.3, 0.8], projection=ccrs.PlateCarree())
     pred[pred > 150] = 149.9
     label[label > 150] = 149.9
     pred[pred < 0] = 0
     label[label < 0] = 0
+    diff[diff > 120] = 119.9
+    diff[diff < -120] = -119.9
+
     # cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree(), levels=range(-50, 50))
     cf1 = plt.contourf(lon, lat, pred, 60, transform=ccrs.PlateCarree(), levels=range(151))
     # cf1 = plt.contourf(lon, lat, pred, 50, transform=ccrs.PlateCarree())
@@ -69,7 +74,7 @@ def plot(pred, label, lon, lat, i, mode):
     ax1.set_title('prediction')
     ax1.set_xlabel('lon')
     ax1.set_ylabel('lat')
-    ax2 = plt.axes([0.46, 0.1, 0.455, 0.8], projection=ccrs.PlateCarree())
+    ax2 = plt.axes([0.305, 0.1, 0.3, 0.8], projection=ccrs.PlateCarree())
     # cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree(), levels=range(-50, 50))
     cf2 = plt.contourf(lon, lat, label, 60, transform=ccrs.PlateCarree(), levels=range(151))
     # cf2 = plt.contourf(lon, lat, label, 50, transform=ccrs.PlateCarree())
@@ -77,13 +82,22 @@ def plot(pred, label, lon, lat, i, mode):
     ax2.set_xlabel('lon')
     ax2.set_title('label')
     ax2.coastlines()
-    # plt.subplots_adjust(bottom=0.1, right=0.9, top=0.9)
-    cax = plt.axes([0.92, 0.1, 0.025, 0.8])
+
+    ax3 = plt.axes([0.63, 0.1, 0.3, 0.8], projection=ccrs.PlateCarree())
+    tmp = list(np.array(np.arange(240)) - 120)
+    cf3 = plt.contourf(lon, lat, diff, 60, transform=ccrs.PlateCarree(), levels=tmp)
+    ax3.set_xlabel('lon')
+    ax3.set_title('diff')
+    ax3.coastlines()
+
+    cax = plt.axes([0.6, 0.1, 0.025, 0.8])
     # cbar = fig.colorbar(cf2, ax=[ax1, ax2], shrink=1, cax=cax, ticks=[0, 30, 60, 90, 120, 150])
     # cbar.set_ticklabels(['0', '30', '60', '90', '120', '>150'])
     cbar = fig.colorbar(cf1, ax=[ax1, ax2], shrink=1, cax=cax)
+    cax = plt.axes([0.93, 0.1, 0.025, 0.8])
+    cbar = fig.colorbar(cf3, ax=ax3, shrink=1, cax=cax)
     cbar.ax.tick_params(labelsize=12)
-    cbar.set_label('No2(ppb)')
+    # cbar.set_label('No2(ppb)')
     if mode == 'show':
         plt.show()
     elif mode == 'save':
@@ -182,7 +196,7 @@ def eval():
 
     # to track the validation loss as the model trains
     test_losses = []
-    label_list, pred_list = np.zeros([500, 24, h, w]).astype(float), np.zeros([500, 24, h, w]).astype(float)
+    label_list, pred_list = np.zeros([500, length, h, w]).astype(float), np.zeros([500, length, h, w]).astype(float)
 
     tb = SummaryWriter()
     with torch.no_grad():
@@ -200,7 +214,7 @@ def eval():
             # input_decoder = inputs.squeeze(dim=2)
             input_decoder = None
             # pred = net(inputs, input_decoder, wrf)[:, -24, :, :, :].squeeze()  # B,S,C,H,W
-            pred = torch.pow((net(inputs, input_decoder, wrf)[:, -24:, :, :, :].squeeze() * (2.8531 + 1.7875) - 1.7875), 3) * 22.8285 + 23.8102
+            pred = torch.pow((net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze() * (2.8531 + 1.7875) - 1.7875), 3) * 22.8285 + 23.8102
             # pred = net(inputs, input_decoder, wrf)[:, -1, :, :, :].squeeze() * 22.8285 + 23.8102
             if i == 0:
                 print(pred)
@@ -251,8 +265,8 @@ def eval_plot():
         aqms = aqms_data[:, :, i + 72 + 23 + 20]
         aqms_12 = aqms_data_12[:, :, i + 72 + 23 + 20]
         # aqms = aqms_data[:, :, i + 72 + 23]
-        pred = pred_list[i, 24, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1.5) ** 3 * 20.0351 - 12.4155
-        label = label_list[i, 24, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1) ** 3 * 20.0351 - 12.4155
+        pred = pred_list[i, 0, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1.5) ** 3 * 20.0351 - 12.4155
+        label = label_list[i, 0, :, :]# * (2.4410 + 2.2625) - 2.2625) * 1) ** 3 * 20.0351 - 12.4155
         # plt.figure()
         # plt.contourf(pred)
         # plt.colorbar()
@@ -315,12 +329,14 @@ def eval_ts():
     weight = np.load('weight.npy')
     weight = weight.reshape([-1, 14])
     cor_list, pred_station, label_station, diff_station, aqms_station, diff12_station = [], [], [], [], [], []
-    # station = [150, 150]
-    station = [79, 168]
-    # station = [130, 181]
+    station = [150, 150]
+    # station = [79, 168]
+    # station = [80, 199]
     # station = [78, 182]
     # station = [120, 154]
-    for i in range(500):
+    for i in range(2626):
+        if i == 500:
+            break
         aqms = aqms_data[:, :, i + 23678]
         aqms_12 = aqms_data_12[:, :, i + 72 + 23 + 20]
         diff = diff_data[:, :, i + 72 + 23 + 20]
@@ -354,6 +370,8 @@ def eval_ts():
         print(cal_IOA(pred_station, label_station))
         print(cal_IOA(pred_station, aqms_station))
         print(cal_IOA(aqms_station, label_station))
+        print('label: ', np.mean(label_station))
+        print('pred: ', np.mean(pred_station))
     plt.figure()
     x = np.arange(500 - lag)
     if lag:
@@ -365,5 +383,5 @@ def eval_ts():
 
 if __name__ == "__main__":
     # eval()
-    # eval_plot()
-    eval_ts()
+    eval_plot()
+    # eval_ts()

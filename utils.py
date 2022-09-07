@@ -16,10 +16,10 @@ def make_layers(block):
                                                  padding=v[4])
             layers.append((layer_name, transposeConv2d))
             if 'relu' in layer_name:
-                layers.append(('dropout', nn.Dropout(0.5)))
+                # layers.append(('dropout', nn.Dropout(0.5)))
                 layers.append(('relu_' + layer_name, nn.ReLU(inplace=True)))
             elif 'leaky' in layer_name:
-                layers.append(('dropout', nn.Dropout(0.5)))
+                # layers.append(('dropout', nn.Dropout(0.5)))
                 layers.append(('leaky_' + layer_name,
                                # nn.Tanh()))
                                # nn.Sigmoid()))
@@ -32,10 +32,10 @@ def make_layers(block):
                                padding=v[4])
             layers.append((layer_name, conv2d))
             if 'relu' in layer_name:
-                layers.append(('dropout', nn.Dropout(0.5)))
+                # layers.append(('dropout', nn.Dropout(0.5)))
                 layers.append(('relu_' + layer_name, nn.ReLU(inplace=True)))
             elif 'leaky' in layer_name:
-                layers.append(('dropout', nn.Dropout(0.5)))
+                # layers.append(('dropout', nn.Dropout(0.5)))
                 layers.append(('leaky_' + layer_name,
                                # nn.Tanh()))
                                # nn.Sigmoid()))
